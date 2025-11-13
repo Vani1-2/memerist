@@ -83,11 +83,11 @@ myapp_application_about_action (GSimpleAction *action,
 	window = gtk_application_get_active_window (GTK_APPLICATION (self));
 
 	adw_show_about_dialog (GTK_WIDGET (window),
-	                       "application-name", "myapp",
+	                       "application-name", "Test App",
 	                       "application-icon", "org.gnome.Example",
 	                       "developer-name", "Giovanni",
 	                       "translator-credits", _("translator-credits"),
-	                       "version", "0.1.0",
+	                       "version", "0.0.0-1.alpha",
 	                       "developers", developers,
 	                       "copyright", "© 2025 Giovanni",
 	                       NULL);

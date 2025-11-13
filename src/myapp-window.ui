@@ -42,7 +42,7 @@
         <attribute name="action">app.shortcuts</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_About MyApp</attribute>
+        <attribute name="label" translatable="yes">_About Test App</attribute>
         <attribute name="action">app.about</attribute>
       </item>
     </section>

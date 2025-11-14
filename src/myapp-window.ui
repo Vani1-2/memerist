@@ -57,6 +57,7 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Meme Text</property>
+                    <property name="description">Drag text on preview to reposition</property>
 
                     <child>
                       <object class="AdwEntryRow" id="top_text_entry">
@@ -67,6 +68,26 @@
                     <child>
                       <object class="AdwEntryRow" id="bottom_text_entry">
                         <property name="title">Bottom Text</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Appearance</property>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">Dark Mode</property>
+                        <property name="activatable-widget">dark_mode_switch</property>
+                        <child>
+                          <object class="GtkSwitch" id="dark_mode_switch">
+                            <property name="valign">center</property>
+                            <signal name="state-set" handler="on_dark_mode_toggled" swapped="no"/>
+                          </object>
+                        </child>
                       </object>
                     </child>
                   </object>

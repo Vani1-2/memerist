@@ -14,7 +14,7 @@ myapp_sources += gnome.compile_resources('myapp-resources',
   c_name: 'myapp'
 )
 
-executable('myapp', myapp_sources,
+executable('Memerist', myapp_sources,
   dependencies: myapp_deps,
        install: true,
 )

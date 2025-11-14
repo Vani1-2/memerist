@@ -22,21 +22,37 @@
 #include "myapp-window.h"
 #include <cairo.h>
 
+typedef enum {
+	TEXT_TYPE_NONE,
+	TEXT_TYPE_TOP,
+	TEXT_TYPE_BOTTOM
+} TextType;
+
 struct _MyappWindow
 {
 	AdwApplicationWindow parent_instance;
 
-	/* Template widgets */
+
 	GtkImage      *meme_preview;
 	AdwEntryRow   *top_text_entry;
 	AdwEntryRow   *bottom_text_entry;
 	GtkButton     *export_button;
 	GtkButton     *load_image_button;
+	GtkSwitch     *dark_mode_switch;
 
-	/* Internal data */
+
 	GdkPixbuf     *original_image;
 	GdkPixbuf     *meme_pixbuf;
 	char          *loaded_image_path;
+
+
+	double         top_text_y;
+	double         bottom_text_y;
+
+
+	TextType       dragging_text;
+	GtkGestureDrag *drag_gesture;
+	double         drag_start_y;
 };
 
 G_DEFINE_FINAL_TYPE (MyappWindow, myapp_window, ADW_TYPE_APPLICATION_WINDOW)
@@ -45,8 +61,12 @@ G_DEFINE_FINAL_TYPE (MyappWindow, myapp_window, ADW_TYPE_APPLICATION_WINDOW)
 static void on_text_changed (MyappWindow *self);
 static void on_load_image_clicked (MyappWindow *self);
 static void on_export_clicked (MyappWindow *self);
+static void on_dark_mode_toggled (GtkSwitch *switch_widget, gboolean state, MyappWindow *self);
 static void render_meme (MyappWindow *self);
 static void draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double max_width);
+static void on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self);
+static void on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self);
+static void on_drag_end (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self);
 
 static void
 myapp_window_finalize (GObject *object)
@@ -55,6 +75,7 @@ myapp_window_finalize (GObject *object)
 
 	g_clear_object (&self->original_image);
 	g_clear_object (&self->meme_pixbuf);
+	g_clear_object (&self->drag_gesture);
 	g_clear_pointer (&self->loaded_image_path, g_free);
 
 	G_OBJECT_CLASS (myapp_window_parent_class)->finalize (object);
@@ -75,12 +96,27 @@ myapp_window_class_init (MyappWindowClass *klass)
 	gtk_widget_class_bind_template_child (widget_class, MyappWindow, bottom_text_entry);
 	gtk_widget_class_bind_template_child (widget_class, MyappWindow, export_button);
 	gtk_widget_class_bind_template_child (widget_class, MyappWindow, load_image_button);
+	gtk_widget_class_bind_template_child (widget_class, MyappWindow, dark_mode_switch);
+
+	gtk_widget_class_bind_template_callback (widget_class, on_dark_mode_toggled);
 }
 
 static void
 myapp_window_init (MyappWindow *self)
 {
+	AdwStyleManager *style_manager;
+
 	gtk_widget_init_template (GTK_WIDGET (self));
+
+
+	self->top_text_y = 0.1;
+	self->bottom_text_y = 0.9;
+	self->dragging_text = TEXT_TYPE_NONE;
+
+
+	style_manager = adw_style_manager_get_default ();
+	gtk_switch_set_active (self->dark_mode_switch,
+	                       adw_style_manager_get_dark (style_manager));
 
 
 	g_signal_connect_swapped (self->top_text_entry, "changed",
@@ -91,6 +127,94 @@ myapp_window_init (MyappWindow *self)
 	                          G_CALLBACK (on_load_image_clicked), self);
 	g_signal_connect_swapped (self->export_button, "clicked",
 	                          G_CALLBACK (on_export_clicked), self);
+
+
+	self->drag_gesture = GTK_GESTURE_DRAG (gtk_gesture_drag_new ());
+	gtk_widget_add_controller (GTK_WIDGET (self->meme_preview),
+	                           GTK_EVENT_CONTROLLER (self->drag_gesture));
+	g_signal_connect (self->drag_gesture, "drag-begin",
+	                 G_CALLBACK (on_drag_begin), self);
+	g_signal_connect (self->drag_gesture, "drag-update",
+	                 G_CALLBACK (on_drag_update), self);
+	g_signal_connect (self->drag_gesture, "drag-end",
+	                 G_CALLBACK (on_drag_end), self);
+}
+
+static void
+on_dark_mode_toggled (GtkSwitch *switch_widget, gboolean state, MyappWindow *self)
+{
+	AdwStyleManager *style_manager = adw_style_manager_get_default ();
+
+	if (state) {
+		adw_style_manager_set_color_scheme (style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
+	} else {
+		adw_style_manager_set_color_scheme (style_manager, ADW_COLOR_SCHEME_FORCE_LIGHT);
+	}
+}
+
+static void
+on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
+{
+	int img_height;
+	double relative_y;
+	double top_text_abs_y;
+	double bottom_text_abs_y;
+	double threshold;
+
+	if (self->original_image == NULL)
+		return;
+
+	img_height = gtk_widget_get_height (GTK_WIDGET (self->meme_preview));
+	relative_y = y / img_height;
+
+
+	top_text_abs_y = self->top_text_y;
+	bottom_text_abs_y = self->bottom_text_y;
+
+
+	threshold = 0.15;
+
+	if (fabs (relative_y - top_text_abs_y) < threshold) {
+		self->dragging_text = TEXT_TYPE_TOP;
+		self->drag_start_y = y;
+	} else if (fabs (relative_y - bottom_text_abs_y) < threshold) {
+		self->dragging_text = TEXT_TYPE_BOTTOM;
+		self->drag_start_y = y;
+	} else {
+		self->dragging_text = TEXT_TYPE_NONE;
+	}
+}
+
+static void
+on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self)
+{
+	int img_height;
+	double new_y;
+	double relative_y;
+
+	if (self->dragging_text == TEXT_TYPE_NONE || self->original_image == NULL)
+		return;
+
+	img_height = gtk_widget_get_height (GTK_WIDGET (self->meme_preview));
+	new_y = self->drag_start_y + offset_y;
+	relative_y = new_y / img_height;
+
+
+	relative_y = CLAMP (relative_y, 0.05, 0.95);
+
+	if (self->dragging_text == TEXT_TYPE_TOP) {
+		self->top_text_y = relative_y;
+	} else if (self->dragging_text == TEXT_TYPE_BOTTOM) {
+		self->bottom_text_y = relative_y;
+	}
+
+	render_meme (self);
+}
+
+static void
+on_drag_end (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self)
+{
+	self->dragging_text = TEXT_TYPE_NONE;
 }
 
 static void
@@ -132,6 +256,10 @@ on_load_image_response (GObject *source, GAsyncResult *result, gpointer user_dat
 		g_object_unref (file);
 		return;
 	}
+
+
+	self->top_text_y = 0.1;
+	self->bottom_text_y = 0.9;
 
 
 	gtk_widget_set_sensitive (GTK_WIDGET (self->export_button), TRUE);
@@ -211,57 +339,66 @@ draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, doubl
 static void
 render_meme (MyappWindow *self)
 {
+	const char *top_text;
+	const char *bottom_text;
+	int width;
+	int height;
+	cairo_surface_t *surface;
+	cairo_t *cr;
+	GdkTexture *texture;
+	GBytes *bytes;
+
 	if (self->original_image == NULL)
 		return;
 
-	const char *top_text = gtk_editable_get_text (GTK_EDITABLE (self->top_text_entry));
-	const char *bottom_text = gtk_editable_get_text (GTK_EDITABLE (self->bottom_text_entry));
+	top_text = gtk_editable_get_text (GTK_EDITABLE (self->top_text_entry));
+	bottom_text = gtk_editable_get_text (GTK_EDITABLE (self->bottom_text_entry));
 
-	int width = gdk_pixbuf_get_width (self->original_image);
-	int height = gdk_pixbuf_get_height (self->original_image);
+	width = gdk_pixbuf_get_width (self->original_image);
+	height = gdk_pixbuf_get_height (self->original_image);
 
 
 	g_clear_object (&self->meme_pixbuf);
 	self->meme_pixbuf = gdk_pixbuf_copy (self->original_image);
 
 
-	cairo_surface_t *surface = cairo_image_surface_create (
+	surface = cairo_image_surface_create_for_data (
+		gdk_pixbuf_get_pixels (self->meme_pixbuf),
 		CAIRO_FORMAT_RGB24,
 		width,
-		height
+		height,
+		gdk_pixbuf_get_rowstride (self->meme_pixbuf)
 	);
 
-	cairo_t *cr = cairo_create (surface);
-
-
-	gdk_cairo_set_source_pixbuf (cr, self->original_image, 0, 0);
-	cairo_paint (cr);
+	cr = cairo_create (surface);
 
 
 	if (top_text && strlen (top_text) > 0) {
 		char *upper_text = g_utf8_strup (top_text, -1);
-		draw_text_with_outline (cr, upper_text, width / 2.0, height * 0.1, width);
+		draw_text_with_outline (cr, upper_text, width / 2.0, height * self->top_text_y, width);
 		g_free (upper_text);
 	}
 
 
 	if (bottom_text && strlen (bottom_text) > 0) {
 		char *upper_text = g_utf8_strup (bottom_text, -1);
-		draw_text_with_outline (cr, upper_text, width / 2.0, height * 0.9, width);
+		draw_text_with_outline (cr, upper_text, width / 2.0, height * self->bottom_text_y, width);
 		g_free (upper_text);
 	}
 
 	cairo_destroy (cr);
-
-
-	g_clear_object (&self->meme_pixbuf);
-	self->meme_pixbuf = gdk_pixbuf_get_from_surface (surface, 0, 0, width, height);
 	cairo_surface_destroy (surface);
 
 
-	GdkTexture *texture = gdk_texture_new_for_pixbuf (self->meme_pixbuf);
+	bytes = g_bytes_new (gdk_pixbuf_get_pixels (self->meme_pixbuf),
+	                     gdk_pixbuf_get_byte_length (self->meme_pixbuf));
+	texture = gdk_memory_texture_new (width, height,
+	                                  GDK_MEMORY_DEFAULT,
+	                                  bytes,
+	                                  gdk_pixbuf_get_rowstride (self->meme_pixbuf));
 	gtk_image_set_from_paintable (self->meme_preview, GDK_PAINTABLE (texture));
 	g_object_unref (texture);
+	g_bytes_unref (bytes);
 }
 
 static void
@@ -271,6 +408,8 @@ on_export_response (GObject *source, GAsyncResult *result, gpointer user_data)
 	MyappWindow *self = MYAPP_WINDOW (user_data);
 	GFile *file;
 	GError *error = NULL;
+	char *path;
+	gboolean success;
 
 	file = gtk_file_dialog_save_finish (dialog, result, &error);
 
@@ -282,8 +421,8 @@ on_export_response (GObject *source, GAsyncResult *result, gpointer user_data)
 	}
 
 
-	char *path = g_file_get_path (file);
-	gboolean success = gdk_pixbuf_save (self->meme_pixbuf, path, "png", &error, NULL);
+	path = g_file_get_path (file);
+	success = gdk_pixbuf_save (self->meme_pixbuf, path, "png", &error, NULL);
 
 	if (!success) {
 		g_warning ("Failed to save meme: %s", error->message);
@@ -299,10 +438,12 @@ on_export_response (GObject *source, GAsyncResult *result, gpointer user_data)
 static void
 on_export_clicked (MyappWindow *self)
 {
+	GtkFileDialog *dialog;
+
 	if (self->meme_pixbuf == NULL)
 		return;
 
-	GtkFileDialog *dialog = gtk_file_dialog_new ();
+	dialog = gtk_file_dialog_new ();
 	gtk_file_dialog_set_title (dialog, "Save Meme");
 	gtk_file_dialog_set_initial_name (dialog, "meme.png");
 

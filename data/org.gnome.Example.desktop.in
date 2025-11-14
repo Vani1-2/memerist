@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=myapp
-Exec=myapp
+Name=Meme Generator
+Exec=Memerist
 Icon=org.gnome.Example
 Terminal=false
 Type=Application

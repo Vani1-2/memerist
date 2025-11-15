@@ -57,6 +57,7 @@ static void on_text_changed (MyappWindow *self);
 static void on_load_image_clicked (MyappWindow *self);
 static void on_export_clicked (MyappWindow *self);
 static void render_meme (MyappWindow *self);
+static void on_clear_clicked (MyappWindow *self);
 static void draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double max_width);
 static void on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self);
 static void on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self);
@@ -90,6 +91,7 @@ myapp_window_class_init (MyappWindowClass *klass)
 	gtk_widget_class_bind_template_child (widget_class, MyappWindow, bottom_text_entry);
 	gtk_widget_class_bind_template_child (widget_class, MyappWindow, export_button);
 	gtk_widget_class_bind_template_child (widget_class, MyappWindow, load_image_button);
+        gtk_widget_class_bind_template_child (widget_class, MyappWindow, clear_button);
 }
 
 static void
@@ -107,6 +109,8 @@ myapp_window_init (MyappWindow *self)
 	                          G_CALLBACK (on_text_changed), self);
 	g_signal_connect_swapped (self->load_image_button, "clicked",
 	                          G_CALLBACK (on_load_image_clicked), self);
+        g_signal_connect_swapped (self->clear_button, "clicked",
+                                  G_CALLBACK (on_clear_clicked), self);
 	g_signal_connect_swapped (self->export_button, "clicked",
 	                          G_CALLBACK (on_export_clicked), self);
 
@@ -230,6 +234,7 @@ on_load_image_response (GObject *source, GAsyncResult *result, gpointer user_dat
 	render_meme (self);
 
 	g_object_unref (file);
+        gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), TRUE);
 }
 
 static void
@@ -258,6 +263,31 @@ on_load_image_clicked (MyappWindow *self)
 	g_object_unref (filters);
 	g_object_unref (filter);
 }
+
+
+
+static void
+on_clear_clicked (MyappWindow *self)
+{
+	g_print ("Clear button clicked!\n");
+
+	gtk_editable_set_text (GTK_EDITABLE (self->top_text_entry), "");
+	gtk_editable_set_text (GTK_EDITABLE (self->bottom_text_entry), "");
+
+	g_clear_object (&self->original_image);
+	g_clear_object (&self->meme_pixbuf);
+	g_clear_pointer (&self->loaded_image_path, g_free);
+
+	gtk_image_clear (self->meme_preview);
+	gtk_image_set_from_icon_name (self->meme_preview, "image-x-generic-symbolic");
+
+	gtk_widget_set_sensitive (GTK_WIDGET (self->export_button), FALSE);
+	gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), FALSE);
+
+	self->top_text_y = 0.1;
+	self->bottom_text_y = 0.9;
+}
+
 
 static void
 draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double max_width)

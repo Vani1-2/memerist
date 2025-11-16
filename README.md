@@ -8,13 +8,10 @@ The ultimate tool for creating memes built upon GTK-4 and Libadwaita for the GNO
 - Export memes as PNG
 - Clean, native GNOME interface
 - Let It Happen
+# Sample
 
-# Sample MEMES
-<img width="1024" height="1024" alt="meme" src="https://github.com/user-attachments/assets/63163370-6972-4fa7-a5ee-81ae1c13c31e" />
-
+<img width="950" height="750" alt="Screenshot From 2025-11-15 15-29-31" src="https://github.com/user-attachments/assets/691d54c8-c16e-4741-995a-4244e0cf34c2" />
 <img width="950" height="750" alt="image" src="https://github.com/user-attachments/assets/97e6a40d-1434-4f1b-b672-703a0a6941bb" />
-
-
 <img width="950" height="750" alt="image" src="https://github.com/user-attachments/assets/350843ca-83be-4de2-88e4-73e324774602" />
 
 

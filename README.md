@@ -45,7 +45,7 @@
 Download the latest `.rpm` package for x86_64 from the [Releases](https://github.com/Vani1-2/gnome-meme-generator/releases) section.
 
 ```bash
-sudo rpm -i Memerisst-*.rpm
+sudo rpm -i Memerist-*.rpm
 ```
 or
 ```bash
@@ -93,7 +93,7 @@ sudo meson install -C build
 #### Running Without Installing
 
 ```bash
-./build/src/gnome-meme-generator
+./build/src/Memerist
 ```
 
 ##  Usage

@@ -120,5 +120,5 @@ Built with GTK 4 and Libadwaita for the GNOME desktop environment.
 ---
 
 <p align="center">
-  Made with ❤️ for meme enthusiasts everywhere
+  Made with a lot of Redbull
 </p>

@@ -25,12 +25,6 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/691d54c8-c16e-4741-995a-4244e0cf34c2" alt="Main interface" width="800"/>
-  <br/>
-  <em>Clean and intuitive meme creation interface</em>
-</p>
-
-<p align="center">
   <img src="https://github.com/user-attachments/assets/97e6a40d-1434-4f1b-b672-703a0a6941bb" alt="Meme example 1" width="800"/>
 </p>
 

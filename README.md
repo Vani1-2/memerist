@@ -14,7 +14,7 @@
 
 ---
 
-## ✨ Features
+##Features
 
 - **Image Import** - Load any image to use as your meme template
 - **Classic Meme Text** - Add customizable top and bottom text
@@ -22,7 +22,7 @@
 - **Native GNOME Design** - Built with Libadwaita
 - **Let it Happen**
 
-## 📸 Screenshots
+##Screenshots
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/97e6a40d-1434-4f1b-b672-703a0a6941bb" alt="Meme example 1" width="800"/>
@@ -44,11 +44,11 @@
 Download the latest `.rpm` package for x86_64 from the [Releases](https://github.com/Vani1-2/gnome-meme-generator/releases) section.
 
 ```bash
-sudo rpm -i Memerist-*.rpm
+sudo rpm -i memerist-*.rpm
 ```
 or
 ```bash
-sudo dnf install ./Memerist-*.rpm
+sudo dnf install ./memerist-*.rpm
 ```
 
 ### Building from Source
@@ -92,7 +92,7 @@ sudo meson install -C build
 #### Running Without Installing
 
 ```bash
-./build/src/Memerist
+./build/src/memerist
 ```
 
 ##  Usage

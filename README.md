@@ -25,15 +25,12 @@
 ## Screenshots
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/97e6a40d-1434-4f1b-b672-703a0a6941bb" alt="Meme example 1" width="800"/>
+ <img width="800" alt="meme example 1" src="https://github.com/user-attachments/assets/f596dad4-ae73-433d-a24f-ea1b3011157b" />
+
 </p>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/350843ca-83be-4de2-88e4-73e324774602" alt="Meme example 2" width="800"/>
-</p>
-
-<p align="center">
-  <img width="800" alt="Meme example 4" src="https://github.com/user-attachments/assets/65039787-2415-4c41-a880-b4eae7cd93d8" />
+ <img width="800" alt="Meme example 2" src="https://github.com/user-attachments/assets/e9c29056-96d4-422b-99d5-108a6671cefc" />
 </p>
 
 

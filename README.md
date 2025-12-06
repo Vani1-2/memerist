@@ -13,9 +13,9 @@
 </p>
 
 
-
+<div align="center">
 [![Copr build status](https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/)
-
+</div>
 
 ---
 

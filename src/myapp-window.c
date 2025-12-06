@@ -53,6 +53,8 @@ struct _MyappWindow
     GtkButton      *add_image_button;
     GtkButton      *import_template_button;
     GtkButton      *delete_template_button;
+    GtkSpinButton  *top_text_size;
+    GtkSpinButton  *bottom_text_size;
     GtkFlowBox     *template_gallery;
 
     GdkPixbuf      *template_image;
@@ -83,7 +85,7 @@ static void on_import_template_clicked (MyappWindow *self);
 static void on_delete_template_clicked (MyappWindow *self);
 static void on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, MyappWindow *self);
 static void render_meme (MyappWindow *self);
-static void draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double max_width);
+static void draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double font_size);
 static void on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self);
 static void on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self);
 static void on_drag_end (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self);
@@ -121,6 +123,8 @@ myapp_window_class_init (MyappWindowClass *klass)
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, add_image_button);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, import_template_button);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, delete_template_button);
+    gtk_widget_class_bind_template_child (widget_class, MyappWindow, top_text_size);
+    gtk_widget_class_bind_template_child (widget_class, MyappWindow, bottom_text_size);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, template_gallery);
 }
 
@@ -144,6 +148,10 @@ myapp_window_init (MyappWindow *self)
     g_signal_connect_swapped (self->top_text_entry, "changed",
                               G_CALLBACK (on_text_changed), self);
     g_signal_connect_swapped (self->bottom_text_entry, "changed",
+                              G_CALLBACK (on_text_changed), self);
+    g_signal_connect_swapped (self->top_text_size, "value-changed",
+                              G_CALLBACK (on_text_changed), self);
+    g_signal_connect_swapped (self->bottom_text_size, "value-changed",
                               G_CALLBACK (on_text_changed), self);
     g_signal_connect_swapped (self->load_image_button, "clicked",
                               G_CALLBACK (on_load_image_clicked), self);
@@ -359,7 +367,7 @@ on_delete_confirm_response (GObject *source, GAsyncResult *result, gpointer user
 
     response = gtk_alert_dialog_choose_finish (dialog, result, &error);
 
-    if (response == 1) { /* Index 1 is "Delete" */
+    if (response == 1) {
         GList *selected = gtk_flow_box_get_selected_children (self->template_gallery);
         if (selected) {
             GtkFlowBoxChild *child = selected->data;
@@ -688,28 +696,20 @@ on_clear_clicked (MyappWindow *self)
 }
 
 static void
-draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double max_width)
+draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double font_size)
 {
     cairo_text_extents_t extents;
-    double font_size;
 
     cairo_select_font_face (cr, "Impact", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
 
-    font_size = 60.0;
     cairo_set_font_size (cr, font_size);
     cairo_text_extents (cr, text, &extents);
-
-    if (extents.width > max_width * 0.9) {
-        font_size = (max_width * 0.9) / extents.width * font_size;
-        cairo_set_font_size (cr, font_size);
-        cairo_text_extents (cr, text, &extents);
-    }
 
     x = x - extents.width / 2 - extents.x_bearing;
     y = y - extents.height / 2 - extents.y_bearing;
 
     cairo_set_source_rgb (cr, 0, 0, 0);
-    cairo_set_line_width (cr, 6.0);
+    cairo_set_line_width (cr, font_size * 0.1);
     cairo_move_to (cr, x, y);
     cairo_text_path (cr, text);
     cairo_stroke (cr);
@@ -782,13 +782,15 @@ render_meme (MyappWindow *self)
 
     if (top_text && strlen (top_text) > 0) {
         char *upper_text = g_utf8_strup (top_text, -1);
-        draw_text_with_outline (cr, upper_text, width * self->top_text_x, height * self->top_text_y, width);
+        double size = gtk_spin_button_get_value (self->top_text_size);
+        draw_text_with_outline (cr, upper_text, width * self->top_text_x, height * self->top_text_y, size);
         g_free (upper_text);
     }
 
     if (bottom_text && strlen (bottom_text) > 0) {
         char *upper_text = g_utf8_strup (bottom_text, -1);
-        draw_text_with_outline (cr, upper_text, width * self->bottom_text_x, height * self->bottom_text_y, width);
+        double size = gtk_spin_button_get_value (self->bottom_text_size);
+        draw_text_with_outline (cr, upper_text, width * self->bottom_text_x, height * self->bottom_text_y, size);
         g_free (upper_text);
     }
 

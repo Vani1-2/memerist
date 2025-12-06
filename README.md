@@ -1,7 +1,7 @@
-# GNOME Meme Generator
+# GNOME Meme Editor
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/12d959d2-25e9-4da1-9d6b-9f5ea1381d15" alt="GNOME Meme Generator Logo" width="128"/>
+  <img src="https://github.com/user-attachments/assets/12d959d2-25e9-4da1-9d6b-9f5ea1381d15" alt="GNOME Meme Editor Logo" width="128"/>
 </p>
 
 <p align="center">
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  A modern meme generator built with GTK 4 and Libadwaita for the GNOME desktop.
+  A modern meme editor built with GTK 4 and Libadwaita for the GNOME desktop.
 </p>
 
 ---
@@ -72,7 +72,7 @@ sudo pacman -S gtk4 libadwaita meson ninja
 ```bash
 # Clone the repository
 git clone https://github.com/Vani1-2/gnome-meme-editor.git
-cd gnome-meme-generator
+cd gnome-meme-editor
 
 # Configure the build
 meson setup build
@@ -92,7 +92,7 @@ sudo meson install -C build
 
 ##  Usage
 
-1. Launch GNOME Meme Generator from your application menu
+1. Launch Memerist from your application menu
 2. Click the folder button to browse images using your file browser
 3. Enter your top and bottom text, you can drag the text anywhere
 4. Export your meme as PNG

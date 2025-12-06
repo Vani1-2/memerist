@@ -42,4 +42,10 @@ main (int   argc,
 }
 
 
+/* Almighty God, forgive me for all my messy commits and broken builds.
+ * I forsake my careless hacks and abandoned branches.
+ * I surrender even my stubborn bugs; I accept the warnings I deserve.
+ * But grant me the strength to keep chaos out of this codebase,
+ * and the wisdom to maintain what I have created.
+ */
 

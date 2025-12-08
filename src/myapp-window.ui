@@ -103,7 +103,7 @@
               <object class="GtkPaned">
                 <property name="orientation">horizontal</property>
                 <property name="hexpand">true</property>
-                <property name="position">800</property>
+                <property name="position">740</property>
                 <property name="wide-handle">true</property>
                 <property name="start-child">
                   <object class="GtkScrolledWindow">

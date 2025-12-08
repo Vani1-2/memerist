@@ -1,7 +1,7 @@
 # GNOME Meme Editor
 
 <p align="center">
-  <img src="data/icons/hicolor/scalable/apps/org.gnome.Memerist.svg" alt="GNOME Meme Editor Logo" width="128"/>
+  <img src="data/icons/hicolor/scalable/apps/io.github.vani1_2.memerist.svg" alt="GNOME Meme Editor Logo" width="128"/>
 </p>
 
 <p align="center">

@@ -2,9 +2,10 @@
 Name=Memerist
 Comment=Create memes with custom text overlays
 Exec=memerist
-Icon=io.github.vani1_2.memerist.svg
+Icon=io.github.vani1_2.memerist
 Terminal=false
 Type=Application
 Categories=Graphics;Photography;
 Keywords=meme;image;text;caption;overlay;funny;
 StartupNotify=true
+StartupWMClass=io.github.vani1_2.memerist

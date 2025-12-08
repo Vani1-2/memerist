@@ -13,7 +13,7 @@ if desktop_utils.found()
 endif
 
 install_subdir('templates',
-  install_dir: get_option('datadir') / 'Memerist'
+  install_dir: get_option('datadir') / 'io.github.vani1_2.memerist'
 )
 
 appstreamcli = find_program('appstreamcli', required: false, disabler: true)

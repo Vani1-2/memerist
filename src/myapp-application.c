@@ -74,7 +74,7 @@ myapp_application_about_action (GSimpleAction *action,
 
   adw_show_about_dialog (GTK_WIDGET (window),
                          "application-name", "Meme Editor",
-                         "application-icon", "org.gnome.Memerist",
+                         "application-icon", "io.github.vani1_2.memerist",
                          "developer-name", "Giovanni",
                          "version", PACKAGE_VERSION,
                          "developers", developers,

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.gnome.Memerist</id>
+  <id>io.github.vani1_2.memerist</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>Memerist</name>
@@ -20,12 +20,12 @@
 
     </ul>
   </description>
-  <developer id="org.gnome.Memerist">
+  <developer id="io.github.vani1_2.memerist">
     <name>Giovanni</name>
   </developer>
   <url type="homepage">https://github.com/Vani1-2/gnome-meme-editor</url>
   <translation type="gettext">memerist</translation>
-  <launchable type="desktop-id">org.gnome.Memerist.desktop</launchable>
+  <launchable type="desktop-id">io.github.vani1_2.memerist.desktop</launchable>
   <content_rating type="oars-1.1" />
   <branding>
     <color type="primary" scheme_preference="light">#3584e4</color>

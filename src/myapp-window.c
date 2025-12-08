@@ -1,4 +1,4 @@
-/* myapp-window.c
+/* myapp-window.h
  *
  * Copyright 2025 Giovanni
  *
@@ -18,12 +18,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include "config.h"
-#include "myapp-window.h"
-#include <cairo.h>
-#include <math.h>
-#include <glib/gstdio.h>
-
 
 
 /* Almighty God, forgive me for all of my wicked sins, I forsake my escape.
@@ -31,6 +25,17 @@
  * But grant me the power to keep your enemy here with me.
  */
 
+
+
+
+#include "config.h"
+#include "myapp-window.h"
+#include <cairo.h>
+#include <math.h>
+#include <stdlib.h>
+#include <glib/gstdio.h>
+
+#define CLAMP_U8(val) ((val) < 0 ? 0 : ((val) > 255 ? 255 : (val)))
 
 typedef enum {
     DRAG_TYPE_NONE,
@@ -62,6 +67,7 @@ struct _MyappWindow
     GtkButton      *add_image_button;
     GtkButton      *import_template_button;
     GtkButton      *delete_template_button;
+    GtkToggleButton *deep_fry_button;
     GtkSpinButton  *top_text_size;
     GtkSpinButton  *bottom_text_size;
     GtkFlowBox     *template_gallery;
@@ -103,7 +109,7 @@ static void on_drag_update (GtkGestureDrag *gesture, double offset_x, double off
 static void on_drag_end (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self);
 static void on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWindow *self);
 static void populate_template_gallery (MyappWindow *self);
-
+static void on_deep_fry_toggled (GtkToggleButton *btn, MyappWindow *self);
 
 static void
 get_image_coordinates (MyappWindow *self, double widget_x, double widget_y, double *img_x, double *img_y)
@@ -127,7 +133,6 @@ get_image_coordinates (MyappWindow *self, double widget_x, double widget_y, doub
 
     w_ratio = ww / iw;
     h_ratio = wh / ih;
-
 
     scale = (w_ratio < h_ratio) ? w_ratio : h_ratio;
 
@@ -185,6 +190,7 @@ myapp_window_class_init (MyappWindowClass *klass)
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, add_image_button);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, import_template_button);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, delete_template_button);
+    gtk_widget_class_bind_template_child (widget_class, MyappWindow, deep_fry_button);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, top_text_size);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, bottom_text_size);
     gtk_widget_class_bind_template_child (widget_class, MyappWindow, template_gallery);
@@ -215,6 +221,7 @@ myapp_window_init (MyappWindow *self)
     g_signal_connect_swapped (self->export_button, "clicked", G_CALLBACK (on_export_clicked), self);
     g_signal_connect_swapped (self->import_template_button, "clicked", G_CALLBACK (on_import_template_clicked), self);
     g_signal_connect_swapped (self->delete_template_button, "clicked", G_CALLBACK (on_delete_template_clicked), self);
+    g_signal_connect (self->deep_fry_button, "toggled", G_CALLBACK (on_deep_fry_toggled), self);
     g_signal_connect (self->template_gallery, "child-activated", G_CALLBACK (on_template_selected), self);
 
     self->drag_gesture = GTK_GESTURE_DRAG (gtk_gesture_drag_new ());
@@ -406,7 +413,6 @@ on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWi
     img_w = gdk_pixbuf_get_width(self->template_image);
     img_h = gdk_pixbuf_get_height(self->template_image);
 
-
     ww = gtk_widget_get_width (GTK_WIDGET (self->meme_preview));
     wh = gtk_widget_get_height (GTK_WIDGET (self->meme_preview));
     w_ratio = ww / img_w;
@@ -425,7 +431,6 @@ on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWi
         right = layer->x + half_w;
         top = layer->y - half_h;
         bottom = layer->y + half_h;
-
 
         corner_x = 20.0 / (img_w * screen_scale);
         corner_y = 20.0 / (img_h * screen_scale);
@@ -459,9 +464,6 @@ on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWi
     }
 }
 
-
-
-
 static void
 on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
 {
@@ -478,7 +480,6 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
     get_image_coordinates(self, x, y, &rel_x, &rel_y);
     img_w = gdk_pixbuf_get_width(self->template_image);
     img_h = gdk_pixbuf_get_height(self->template_image);
-
 
     ww = gtk_widget_get_width (GTK_WIDGET (self->meme_preview));
     wh = gtk_widget_get_height (GTK_WIDGET (self->meme_preview));
@@ -498,7 +499,6 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
         right = layer->x + half_w;
         top = layer->y - half_h;
         bottom = layer->y + half_h;
-
 
         corner_x = 20.0 / (img_w * screen_scale);
         corner_y = 20.0 / (img_h * screen_scale);
@@ -531,7 +531,6 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
         }
     }
 
-
     top_fs = gtk_spin_button_get_value (self->top_text_size);
     bottom_fs = gtk_spin_button_get_value (self->bottom_text_size);
     top_threshold = MAX(0.1, (top_fs / img_h) * 0.6);
@@ -558,14 +557,6 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
     self->drag_start_y = rel_y;
     render_meme(self);
 }
-
-
-
-
-
-
-
-
 
 static void
 on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self)
@@ -610,7 +601,6 @@ on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, Myapp
         cur_dy = current_img_y - cy;
         cur_dist = sqrt(cur_dx*cur_dx + cur_dy*cur_dy);
 
-
         if (start_dist > 5.0) {
             double ratio = cur_dist / start_dist;
             self->selected_layer->scale = CLAMP (self->drag_obj_start_scale * ratio, 0.1, 5.0);
@@ -627,9 +617,6 @@ on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, Myapp
 
     render_meme (self);
 }
-
-
-
 
 static void on_drag_end (GtkGestureDrag *gesture, double offset_x, double offset_y, MyappWindow *self) {
     self->drag_type = DRAG_TYPE_NONE;
@@ -699,6 +686,8 @@ static void on_clear_clicked (MyappWindow *self) {
     gtk_widget_set_sensitive (GTK_WIDGET (self->export_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->deep_fry_button), FALSE);
+    gtk_toggle_button_set_active (self->deep_fry_button, FALSE);
     gtk_flow_box_unselect_all (self->template_gallery);
 }
 
@@ -716,16 +705,47 @@ draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, doubl
     cairo_set_source_rgb (cr, 1, 1, 1); cairo_move_to (cr, x, y); cairo_show_text (cr, text);
 }
 
+static GdkPixbuf *
+apply_deep_fry (GdkPixbuf *src)
+{
+    int width = gdk_pixbuf_get_width (src);
+    int height = gdk_pixbuf_get_height (src);
+    int n_channels = gdk_pixbuf_get_n_channels (src);
+    int rowstride = gdk_pixbuf_get_rowstride (src);
+    GdkPixbuf *fried, *shrunk, *final;
+    guchar *pixels;
+    double contrast = 2.0;
+    int noise_level = 30;
+
+    fried = gdk_pixbuf_copy (src);
+    pixels = gdk_pixbuf_get_pixels (fried);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            guchar *p = pixels + y * rowstride + x * n_channels;
+            for (int i = 0; i < 3; i++) {
+                int noise = (rand() % (noise_level * 2 + 1)) - noise_level;
+                int val = p[i] + noise;
+                double c_val = ((double)val - 128.0) * contrast + 128.0;
+                p[i] = CLAMP_U8 ((int)c_val);
+            }
+        }
+    }
+
+    shrunk = gdk_pixbuf_scale_simple (fried, MAX (width * 0.25, 1), MAX (height * 0.25, 1), GDK_INTERP_NEAREST);
+    final = gdk_pixbuf_scale_simple (shrunk, width, height, GDK_INTERP_NEAREST);
+
+    g_object_unref (fried);
+    g_object_unref (shrunk);
+    return final;
+}
 
 
 
 
-
-
-
-// You are entering the void, any code change here can lead to the destruction of an entire function
-
-
+// Stop and think, You are about to enter a place called the void.
+// The rendering logic is so fragile, any code change here can destroy a whole function
+// Do not edit carelessly, consider what you're about to do Tarnished.
 
 
 
@@ -749,17 +769,13 @@ render_meme (MyappWindow *self)
     width = gdk_pixbuf_get_width (self->template_image);
     height = gdk_pixbuf_get_height (self->template_image);
 
-
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
     cr = cairo_create (surface);
-
 
     cairo_save (cr);
     gdk_cairo_set_source_pixbuf (cr, self->template_image, 0.0, 0.0);
     cairo_paint (cr);
     cairo_restore (cr);
-
-
 
     for (l = self->layers; l != NULL; l = l->next) {
         ImageLayer *layer = (ImageLayer *)l->data;
@@ -809,7 +825,6 @@ render_meme (MyappWindow *self)
         cairo_restore (cr);
     }
 
-
     top_text = gtk_editable_get_text (GTK_EDITABLE (self->top_text_entry));
     bottom_text = gtk_editable_get_text (GTK_EDITABLE (self->bottom_text_entry));
 
@@ -827,11 +842,15 @@ render_meme (MyappWindow *self)
     cairo_surface_flush (surface);
     cairo_destroy (cr);
 
-
     G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     composite_pixbuf = gdk_pixbuf_get_from_surface (surface, 0, 0, width, height);
     G_GNUC_END_IGNORE_DEPRECATIONS
 
+    if (gtk_toggle_button_get_active (self->deep_fry_button)) {
+        GdkPixbuf *fried = apply_deep_fry (composite_pixbuf);
+        g_object_unref (composite_pixbuf);
+        composite_pixbuf = fried;
+    }
 
     g_clear_object (&self->final_meme);
     self->final_meme = composite_pixbuf;
@@ -842,6 +861,10 @@ render_meme (MyappWindow *self)
     gtk_image_set_from_paintable (self->meme_preview, GDK_PAINTABLE (texture));
     g_object_unref (texture);
     cairo_surface_destroy (surface);
+}
+
+static void on_deep_fry_toggled (GtkToggleButton *btn, MyappWindow *self) {
+    if (self->template_image) render_meme (self);
 }
 
 static void on_load_image_response (GObject *s, GAsyncResult *r, gpointer d) {
@@ -862,6 +885,7 @@ static void on_load_image_response (GObject *s, GAsyncResult *r, gpointer d) {
         gtk_widget_set_sensitive (GTK_WIDGET (self->export_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), TRUE);
+        gtk_widget_set_sensitive (GTK_WIDGET (self->deep_fry_button), TRUE);
         render_meme (self);
     }
     g_free (path); g_object_unref (file);
@@ -896,9 +920,3 @@ static void on_export_clicked (MyappWindow *self) {
     gtk_file_dialog_set_initial_name (dialog, "meme.png");
     gtk_file_dialog_save (dialog, GTK_WINDOW (self), NULL, on_export_response, self);
 }
-
-
-
-
-
-

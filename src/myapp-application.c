@@ -1,4 +1,4 @@
-/* main.c
+/* myapp-application.c
  *
  * Copyright 2025 Giovanni
  *

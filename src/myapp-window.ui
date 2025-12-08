@@ -63,6 +63,18 @@
                   </object>
                 </child>
                 <child>
+                  <object class="GtkToggleButton" id="deep_fry_button">
+                    <property name="icon-name">weather-severe-alert-symbolic</property>
+                    <property name="tooltip-text">Deep Fry (High Contrast)</property>
+                    <property name="sensitive">false</property>
+                    <property name="height-request">40</property>
+                    <property name="width-request">40</property>
+                    <style>
+                      <class name="warning"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
                   <object class="GtkSeparator">
                     <property name="orientation">horizontal</property>
                     <style>

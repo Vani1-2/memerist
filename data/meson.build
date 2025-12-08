@@ -1,6 +1,6 @@
 desktop_file = i18n.merge_file(
-        input: 'org.gnome.Memerist.desktop.in',
-       output: 'org.gnome.Memerist.desktop',
+        input: 'io.github.vani1_2.memerist.in',
+       output: 'io.github.vani1_2.memerist.desktop',
          type: 'desktop',
        po_dir: '../po',
       install: true,
@@ -20,7 +20,7 @@ appstreamcli = find_program('appstreamcli', required: false, disabler: true)
 test('Validate appstream file', appstreamcli,
      args: ['validate', '--no-net', '--explain'])
 
-install_data('org.gnome.Memerist.gschema.xml',
+install_data('io.github.vani1_2.memerist.xml',
   install_dir: get_option('datadir') / 'glib-2.0' / 'schemas'
 )
 

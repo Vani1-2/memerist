@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/org/gnome/Memerist">
+  <gresource prefix="/io/github/vani1_2/memerist">
     <file preprocess="xml-stripblanks">myapp-window.ui</file>
     <file preprocess="xml-stripblanks">shortcuts-dialog.ui</file>
   </gresource>

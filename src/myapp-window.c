@@ -174,7 +174,7 @@ myapp_window_class_init (MyappWindowClass *klass)
 
   object_class->finalize = myapp_window_finalize;
 
-  gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/Memerist/myapp-window.ui");
+  gtk_widget_class_set_template_from_resource (widget_class,"/io/github/vani1_2/memerist/myapp-window.ui");
 
   gtk_widget_class_bind_template_child (widget_class, MyappWindow, meme_preview);
   gtk_widget_class_bind_template_child (widget_class, MyappWindow, content_stack);

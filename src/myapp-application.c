@@ -39,7 +39,7 @@ myapp_application_new (const char        *application_id,
   return g_object_new (MYAPP_TYPE_APPLICATION,
                        "application-id", application_id,
                        "flags", flags,
-                       "resource-base-path", "/org/gnome/Memerist",
+                       "resource-base-path", "/io/github/vani1_2/memerist",
                        NULL);
 }
 
@@ -168,3 +168,4 @@ myapp_application_class_init (MyappApplicationClass *klass)
 static void
 myapp_application_init (MyappApplication *self)
 {}
+

@@ -2,7 +2,7 @@
 Name=Memerist
 Comment=Create memes with custom text overlays
 Exec=memerist
-Icon=org.gnome.Memerist
+Icon=io.github.vani1_2.memerist.svg
 Terminal=false
 Type=Application
 Categories=Graphics;Photography;

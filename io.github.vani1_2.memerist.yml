@@ -1,8 +1,8 @@
-app-id: io.github.vani1_2.gnome_meme_editor
+app-id: io.github.vani1_2.memerist
 runtime: org.gnome.Platform
-runtime-version: '48'
+runtime-version: '49'
 sdk: org.gnome.Sdk
-command: gnome-meme-editor
+command: memerist
 finish-args:
   - --share=ipc
   - --socket=fallback-x11
@@ -10,7 +10,7 @@ finish-args:
   - --device=dri
   - --filesystem=xdg-pictures
 modules:
-  - name: gnome-meme-editor
+  - name: Memerist
     buildsystem: meson
     sources:
       - type: git

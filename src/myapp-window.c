@@ -40,6 +40,14 @@ typedef enum {
   DRAG_TYPE_IMAGE_RESIZE
 } DragType;
 
+/* blend modes, lmao what the fuck am I doing with my life */
+typedef enum {
+  BLEND_NORMAL,
+  BLEND_MULTIPLY,
+  BLEND_SCREEN,
+  BLEND_OVERLAY
+} BlendMode;
+
 typedef struct {
   GdkPixbuf *pixbuf;
   double x;
@@ -47,6 +55,9 @@ typedef struct {
   double width;
   double height;
   double scale;
+  double rotation;
+  double opacity;
+  BlendMode blend_mode;
 } ImageLayer;
 
 struct _MyappWindow
@@ -66,6 +77,13 @@ struct _MyappWindow
   GtkSpinButton   *top_text_size;
   GtkSpinButton   *bottom_text_size;
   GtkFlowBox      *template_gallery;
+
+  /* New UI Controls */
+  GtkToggleButton *cinematic_button;
+  GtkScale        *layer_opacity_scale;
+  GtkScale        *layer_rotation_scale;
+  AdwComboRow     *blend_mode_row;
+  GtkButton       *delete_layer_button;
 
   GdkPixbuf       *template_image;
   GdkPixbuf       *final_meme;
@@ -90,6 +108,7 @@ struct _MyappWindow
 
 G_DEFINE_FINAL_TYPE (MyappWindow, myapp_window, ADW_TYPE_APPLICATION_WINDOW)
 
+
 static void on_text_changed (MyappWindow *self);
 static void on_load_image_clicked (MyappWindow *self);
 static void on_clear_clicked (MyappWindow *self);
@@ -105,6 +124,10 @@ static void on_drag_end (GtkGestureDrag *gesture, double offset_x, double offset
 static void on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWindow *self);
 static void populate_template_gallery (MyappWindow *self);
 static void on_deep_fry_toggled (GtkToggleButton *btn, MyappWindow *self);
+/* These are the new ones needed for the UI */
+static void on_layer_control_changed (MyappWindow *self);
+static void on_delete_layer_clicked (MyappWindow *self);
+static void sync_ui_with_layer(MyappWindow *self);
 
 static void
 get_image_coordinates (MyappWindow *self, double widget_x, double widget_y, double *img_x, double *img_y)
@@ -140,9 +163,6 @@ get_image_coordinates (MyappWindow *self, double widget_x, double widget_y, doub
   *img_x = (widget_x - off_x) / draw_w;
   *img_y = (widget_y - off_y) / draw_h;
 }
-
-
-
 
 static void
 free_image_layer (gpointer data)
@@ -193,12 +213,12 @@ myapp_window_class_init (MyappWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, MyappWindow, top_text_size);
   gtk_widget_class_bind_template_child (widget_class, MyappWindow, bottom_text_size);
   gtk_widget_class_bind_template_child (widget_class, MyappWindow, template_gallery);
+  gtk_widget_class_bind_template_child (widget_class, MyappWindow, cinematic_button);
+  gtk_widget_class_bind_template_child (widget_class, MyappWindow, layer_opacity_scale);
+  gtk_widget_class_bind_template_child (widget_class, MyappWindow, layer_rotation_scale);
+  gtk_widget_class_bind_template_child (widget_class, MyappWindow, blend_mode_row);
+  gtk_widget_class_bind_template_child (widget_class, MyappWindow, delete_layer_button);
 }
-
-
-
-
-
 
 //file drag and drop
 static gboolean
@@ -233,6 +253,7 @@ on_drop_file (GtkDropTarget *target, const GValue *value, double x, double y, My
       gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), TRUE);
       gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), TRUE);
       gtk_widget_set_sensitive (GTK_WIDGET (self->deep_fry_button), TRUE);
+      gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), TRUE);
       render_meme (self);
     }
     g_free (path);
@@ -270,6 +291,13 @@ myapp_window_init (MyappWindow *self)
   g_signal_connect (self->deep_fry_button, "toggled", G_CALLBACK (on_deep_fry_toggled), self);
   g_signal_connect (self->template_gallery, "child-activated", G_CALLBACK (on_template_selected), self);
 
+
+  g_signal_connect (self->cinematic_button, "toggled", G_CALLBACK (on_text_changed), self);
+  g_signal_connect_swapped (self->layer_opacity_scale, "value-changed", G_CALLBACK (on_layer_control_changed), self);
+  g_signal_connect_swapped (self->layer_rotation_scale, "value-changed", G_CALLBACK (on_layer_control_changed), self);
+  g_signal_connect_swapped (self->blend_mode_row, "notify::selected", G_CALLBACK (on_layer_control_changed), self);
+  g_signal_connect_swapped (self->delete_layer_button, "clicked", G_CALLBACK (on_delete_layer_clicked), self);
+
   self->drag_gesture = GTK_GESTURE_DRAG (gtk_gesture_drag_new ());
   gtk_widget_add_controller (GTK_WIDGET (self->meme_preview), GTK_EVENT_CONTROLLER (self->drag_gesture));
   g_signal_connect (self->drag_gesture, "drag-begin", G_CALLBACK (on_drag_begin), self);
@@ -285,6 +313,57 @@ myapp_window_init (MyappWindow *self)
   gtk_widget_add_controller (GTK_WIDGET (self), GTK_EVENT_CONTROLLER (target));
 
   populate_template_gallery (self);
+}
+
+
+static void
+sync_ui_with_layer(MyappWindow *self) {
+    if (self->selected_layer) {
+
+        g_signal_handlers_block_by_func(self->layer_opacity_scale, on_layer_control_changed, self);
+        g_signal_handlers_block_by_func(self->layer_rotation_scale, on_layer_control_changed, self);
+
+        gtk_range_set_value(GTK_RANGE(self->layer_opacity_scale), self->selected_layer->opacity);
+        gtk_range_set_value(GTK_RANGE(self->layer_rotation_scale), self->selected_layer->rotation);
+        adw_combo_row_set_selected(self->blend_mode_row, self->selected_layer->blend_mode);
+
+        g_signal_handlers_unblock_by_func(self->layer_opacity_scale, on_layer_control_changed, self);
+        g_signal_handlers_unblock_by_func(self->layer_rotation_scale, on_layer_control_changed, self);
+
+        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_opacity_scale), TRUE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_rotation_scale), TRUE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->blend_mode_row), TRUE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->delete_layer_button), TRUE);
+    } else {
+        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_opacity_scale), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_rotation_scale), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->blend_mode_row), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->delete_layer_button), FALSE);
+    }
+}
+
+
+static void
+on_layer_control_changed (MyappWindow *self)
+{
+  if (self->selected_layer) {
+     self->selected_layer->opacity = gtk_range_get_value(GTK_RANGE(self->layer_opacity_scale));
+     self->selected_layer->rotation = gtk_range_get_value(GTK_RANGE(self->layer_rotation_scale));
+     self->selected_layer->blend_mode = (BlendMode)adw_combo_row_get_selected(self->blend_mode_row);
+     render_meme(self);
+  }
+}
+
+static void
+on_delete_layer_clicked (MyappWindow *self)
+{
+  if (self->selected_layer) {
+    self->layers = g_list_remove(self->layers, self->selected_layer);
+    free_image_layer(self->selected_layer);
+    self->selected_layer = NULL;
+    sync_ui_with_layer(self);
+    render_meme(self);
+  }
 }
 
 static char *
@@ -371,6 +450,7 @@ on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, MyappWindow *
   gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->export_button), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), TRUE);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), TRUE);
   render_meme (self);
 }
 
@@ -447,10 +527,6 @@ on_delete_template_clicked (MyappWindow *self)
   gtk_alert_dialog_choose (dialog, GTK_WINDOW (self), NULL, on_delete_confirm_response, self);
 }
 
-
-
-
-
 //follow mouse
 static void
 on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWindow *self)
@@ -521,13 +597,6 @@ on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWi
   }
 }
 
-
-
-
-
-
-
-
 //drag logic
 static void
 on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
@@ -579,6 +648,7 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
         self->drag_obj_start_scale = layer->scale;
         self->drag_start_x = rel_x * img_w;
         self->drag_start_y = rel_y * img_h;
+        sync_ui_with_layer(self);
         render_meme(self);
         return;
       }
@@ -591,9 +661,16 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
       self->drag_obj_start_y = layer->y;
       self->drag_start_x = rel_x;
       self->drag_start_y = rel_y;
+      sync_ui_with_layer(self);
       render_meme(self);
       return;
     }
+  }
+
+
+  if (self->selected_layer) {
+      self->selected_layer = NULL;
+      sync_ui_with_layer(self);
   }
 
   top_fs = gtk_spin_button_get_value (self->top_text_size);
@@ -622,11 +699,6 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
   self->drag_start_y = rel_y;
   render_meme(self);
 }
-
-
-
-
-
 
 //finalize text position
 static void
@@ -719,19 +791,20 @@ on_add_image_response (GObject *source, GAsyncResult *result, gpointer user_data
     new_layer->y = 0.5;
     new_layer->scale = 1.0;
 
+
+    new_layer->opacity = 1.0;
+    new_layer->rotation = 0.0;
+    new_layer->blend_mode = BLEND_NORMAL;
+
     self->layers = g_list_append (self->layers, new_layer);
     self->selected_layer = new_layer;
+    sync_ui_with_layer(self);
     render_meme (self);
   } else {
     g_free (new_layer);
   }
   g_free (path); g_object_unref (file);
 }
-
-
-
-
-
 
 // function for add images
 static void on_add_image_clicked (MyappWindow *self) {
@@ -758,6 +831,7 @@ static void on_clear_clicked (MyappWindow *self) {
     self->layers = NULL;
   }
   self->selected_layer = NULL;
+  sync_ui_with_layer(self);
 
   gtk_image_clear (self->meme_preview);
   gtk_image_set_from_icon_name (self->meme_preview, "image-x-generic-symbolic");
@@ -765,11 +839,11 @@ static void on_clear_clicked (MyappWindow *self) {
   gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), FALSE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), FALSE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->deep_fry_button), FALSE);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), FALSE);
   gtk_toggle_button_set_active (self->deep_fry_button, FALSE);
+  gtk_toggle_button_set_active (self->cinematic_button, FALSE);
   gtk_flow_box_unselect_all (self->template_gallery);
 }
-
-
 
 static void
 draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, double font_size)
@@ -786,7 +860,41 @@ draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, doubl
 }
 
 
-//apply filter
+static GdkPixbuf *
+apply_saturation_contrast (GdkPixbuf *src, double sat, double contrast)
+{
+  int w = gdk_pixbuf_get_width (src);
+  int h = gdk_pixbuf_get_height (src);
+  int stride = gdk_pixbuf_get_rowstride (src);
+  int n_channels = gdk_pixbuf_get_n_channels (src);
+  int x, y;
+  guchar *pixels, *p;
+  GdkPixbuf *copy = gdk_pixbuf_copy (src);
+
+  pixels = gdk_pixbuf_get_pixels (copy);
+
+  for (y = 0; y < h; y++) {
+    for (x = 0; x < w; x++) {
+      double r, g, b, gray;
+      p = pixels + y * stride + x * n_channels;
+      r = p[0]; g = p[1]; b = p[2];
+
+      gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      r = gray + (r - gray) * sat;
+      g = gray + (g - gray) * sat;
+      b = gray + (b - gray) * sat;
+
+      r = (r - 128.0) * contrast + 128.0;
+      g = (g - 128.0) * contrast + 128.0;
+      b = (b - 128.0) * contrast + 128.0;
+
+      p[0] = CLAMP_U8(r); p[1] = CLAMP_U8(g); p[2] = CLAMP_U8(b);
+    }
+  }
+  return copy;
+}
+
+//apply filter (Deep Fry)
 static GdkPixbuf *
 apply_deep_fry (GdkPixbuf *src)
 {
@@ -798,14 +906,16 @@ apply_deep_fry (GdkPixbuf *src)
   guchar *pixels;
   double contrast = 2.0;
   int noise_level = 30;
+  int x, y;
 
   fried = gdk_pixbuf_copy (src);
   pixels = gdk_pixbuf_get_pixels (fried);
 
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
+      int i;
       guchar *p = pixels + y * rowstride + x * n_channels;
-      for (int i = 0; i < 3; i++) {
+      for (i = 0; i < 3; i++) {
         int noise = (rand() % (noise_level * 2 + 1)) - noise_level;
         int val = p[i] + noise;
         double c_val = ((double)val - 128.0) * contrast + 128.0;
@@ -825,6 +935,9 @@ apply_deep_fry (GdkPixbuf *src)
 
 
 
+
+
+
 // Stop and think, You are about to enter a place called the void.
 // The rendering logic is so fragile, any code change here can destroy a whole function
 // Do not edit carelessly, consider what you're about to do Tarnished.
@@ -834,7 +947,12 @@ apply_deep_fry (GdkPixbuf *src)
 
 
 
-//render function
+
+
+
+
+
+
 static void
 render_meme (MyappWindow *self)
 {
@@ -842,6 +960,7 @@ render_meme (MyappWindow *self)
   int width, height;
   cairo_surface_t *surface;
   cairo_t *cr;
+  cairo_pattern_t *pat;
   GdkTexture *texture;
   GdkPixbuf *composite_pixbuf;
   GList *l;
@@ -859,6 +978,7 @@ render_meme (MyappWindow *self)
   cairo_paint (cr);
   cairo_restore (cr);
 
+  /* Render Layers with Rotation, Opacity, and Blend Modes */
   for (l = self->layers; l != NULL; l = l->next) {
     ImageLayer *layer = (ImageLayer *)l->data;
     double scaled_w, scaled_h, draw_x, draw_y;
@@ -867,27 +987,39 @@ render_meme (MyappWindow *self)
 
     scaled_w = layer->width * layer->scale;
     scaled_h = layer->height * layer->scale;
-    draw_x = layer->x * width - scaled_w / 2.0;
-    draw_y = layer->y * height - scaled_h / 2.0;
+
+    draw_x = layer->x * width;
+    draw_y = layer->y * height;
 
     cairo_save (cr);
-    cairo_translate (cr, draw_x + scaled_w / 2.0, draw_y + scaled_h / 2.0);
 
-    cairo_save (cr);
+    /* Move to center of layer -> Rotate -> Scale */
+    cairo_translate (cr, draw_x, draw_y);
+    cairo_rotate (cr, layer->rotation);
+
+    if (layer->blend_mode == BLEND_MULTIPLY) cairo_set_operator(cr, CAIRO_OPERATOR_MULTIPLY);
+    else if (layer->blend_mode == BLEND_SCREEN) cairo_set_operator(cr, CAIRO_OPERATOR_SCREEN);
+    else if (layer->blend_mode == BLEND_OVERLAY) cairo_set_operator(cr, CAIRO_OPERATOR_OVERLAY);
+    else cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+
     cairo_scale (cr, layer->scale, layer->scale);
+    /* Draw offset by half size to center it */
     gdk_cairo_set_source_pixbuf (cr, layer->pixbuf, -layer->width/2.0, -layer->height/2.0);
-    cairo_paint (cr);
+
+    if (layer->opacity < 1.0) cairo_paint_with_alpha (cr, layer->opacity);
+    else cairo_paint (cr);
+
     cairo_restore (cr);
 
     if (layer == self->selected_layer) {
-      double hw = scaled_w / 2.0;
-      double hh = scaled_h / 2.0;
-      double handles_x[4];
-      double handles_y[4];
-      int i;
+      double hw, hh;
+      cairo_save(cr);
 
-      handles_x[0] = -hw; handles_x[1] = hw; handles_x[2] = -hw; handles_x[3] = hw;
-      handles_y[0] = -hh; handles_y[1] = -hh; handles_y[2] = hh; handles_y[3] = hh;
+      cairo_translate (cr, draw_x, draw_y);
+      cairo_rotate (cr, layer->rotation);
+
+      hw = scaled_w / 2.0;
+      hh = scaled_h / 2.0;
 
       cairo_set_source_rgba (cr, 0.4, 0.2, 0.8, 0.8);
       cairo_set_line_width (cr, 2.0);
@@ -896,16 +1028,23 @@ render_meme (MyappWindow *self)
 
       cairo_set_source_rgb (cr, 1, 1, 1);
 
-      for (i = 0; i < 4; i++) {
-        cairo_new_sub_path (cr);
-        cairo_arc (cr, handles_x[i], handles_y[i], 6, 0, 2 * M_PI);
-        cairo_fill_preserve (cr);
-        cairo_set_source_rgba (cr, 0.4, 0.2, 0.8, 1.0);
-        cairo_stroke (cr);
-      }
+      cairo_arc (cr, -hw, -hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
+      cairo_arc (cr, hw, -hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
+      cairo_arc (cr, -hw, hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
+      cairo_arc (cr, hw, hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
+      cairo_restore(cr);
     }
-    cairo_restore (cr);
   }
+
+  /* Vignette */
+  cairo_save (cr);
+  pat = cairo_pattern_create_radial (width/2.0, height/2.0, width*0.3, width/2.0, height/2.0, width*0.8);
+  cairo_pattern_add_color_stop_rgba (pat, 0, 0, 0, 0, 0.0);
+  cairo_pattern_add_color_stop_rgba (pat, 1, 0, 0, 0, 0.5);
+  cairo_set_source (cr, pat);
+  cairo_paint (cr);
+  cairo_pattern_destroy (pat);
+  cairo_restore (cr);
 
   top_text = gtk_editable_get_text (GTK_EDITABLE (self->top_text_entry));
   bottom_text = gtk_editable_get_text (GTK_EDITABLE (self->bottom_text_entry));
@@ -928,6 +1067,13 @@ render_meme (MyappWindow *self)
   composite_pixbuf = gdk_pixbuf_get_from_surface (surface, 0, 0, width, height);
   G_GNUC_END_IGNORE_DEPRECATIONS
 
+  /* Cinematic Filter */
+  if (gtk_toggle_button_get_active(self->cinematic_button)) {
+      GdkPixbuf *cinematic = apply_saturation_contrast(composite_pixbuf, 1.15, 1.05);
+      g_object_unref(composite_pixbuf);
+      composite_pixbuf = cinematic;
+  }
+
   if (gtk_toggle_button_get_active (self->deep_fry_button)) {
     GdkPixbuf *fried = apply_deep_fry (composite_pixbuf);
     g_object_unref (composite_pixbuf);
@@ -945,14 +1091,10 @@ render_meme (MyappWindow *self)
   cairo_surface_destroy (surface);
 }
 
-
-
 //butto for deep fry
 static void on_deep_fry_toggled (GtkToggleButton *btn, MyappWindow *self) {
   if (self->template_image) render_meme (self);
 }
-
-
 
 //Deep Fry LMAO, Tangina mo
 static void on_load_image_response (GObject *s, GAsyncResult *r, gpointer d) {
@@ -975,6 +1117,7 @@ static void on_load_image_response (GObject *s, GAsyncResult *r, gpointer d) {
     gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), TRUE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), TRUE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->deep_fry_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), TRUE);
     render_meme (self);
   }
   g_free (path); g_object_unref (file);

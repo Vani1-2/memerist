@@ -2,6 +2,16 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="Adw" version="1.0"/>
+
+  <object class="GtkStringList" id="blend_mode_model">
+    <items>
+      <item>Normal</item>
+      <item>Multiply</item>
+      <item>Screen</item>
+      <item>Overlay</item>
+    </items>
+  </object>
+
   <template class="MyappWindow" parent="AdwApplicationWindow">
     <property name="title" translatable="yes">Meme Editor</property>
     <property name="default-width">1100</property>
@@ -61,6 +71,15 @@
                     <property name="height-request">40</property>
                     <property name="width-request">40</property>
                   </object>
+                </child>
+                <child>
+                   <object class="GtkToggleButton" id="cinematic_button">
+                     <property name="icon-name">camera-video-symbolic</property>
+                     <property name="tooltip-text">Cinematic Filter</property>
+                     <property name="sensitive">false</property>
+                     <property name="height-request">40</property>
+                     <property name="width-request">40</property>
+                   </object>
                 </child>
                 <child>
                   <object class="GtkToggleButton" id="deep_fry_button">
@@ -160,7 +179,7 @@
                                 </child>
                               </object>
                             </child>
-                            </object>
+                          </object>
                         </child>
                       </object>
                     </child>
@@ -175,6 +194,78 @@
                     </style>
                     <child>
                       <object class="AdwPreferencesPage">
+
+                        <child>
+                           <object class="AdwPreferencesGroup">
+                             <property name="title">Selected Layer</property>
+
+                             <child>
+                               <object class="AdwComboRow" id="blend_mode_row">
+                                 <property name="title">Blend Mode</property>
+                                 <property name="model">blend_mode_model</property>
+                               </object>
+                             </child>
+
+                             <child>
+                               <object class="AdwActionRow">
+                                 <property name="title">Opacity</property>
+                                 <child>
+                                   <object class="GtkScale" id="layer_opacity_scale">
+                                     <property name="hexpand">true</property>
+                                     <property name="width-request">150</property>
+                                     <property name="draw-value">true</property>
+                                     <property name="adjustment">
+                                       <object class="GtkAdjustment">
+                                         <property name="lower">0.0</property>
+                                         <property name="upper">1.0</property>
+                                         <property name="value">1.0</property>
+                                         <property name="step-increment">0.1</property>
+                                       </object>
+                                     </property>
+                                   </object>
+                                 </child>
+                               </object>
+                             </child>
+
+                             <child>
+                               <object class="AdwActionRow">
+                                 <property name="title">Rotation</property>
+                                 <child>
+                                   <object class="GtkScale" id="layer_rotation_scale">
+                                     <property name="hexpand">true</property>
+                                     <property name="width-request">150</property>
+                                     <property name="draw-value">false</property>
+                                     <property name="adjustment">
+                                       <object class="GtkAdjustment">
+                                         <property name="lower">0.0</property>
+                                         <property name="upper">6.28</property>
+                                         <property name="value">0.0</property>
+                                         <property name="step-increment">0.1</property>
+                                       </object>
+                                     </property>
+                                   </object>
+                                 </child>
+                               </object>
+                             </child>
+
+                             <child>
+                               <object class="AdwActionRow">
+                                 <child>
+                                   <object class="GtkButton" id="delete_layer_button">
+                                     <property name="label">Delete Layer</property>
+                                     <property name="halign">fill</property>
+                                     <property name="hexpand">true</property>
+                                     <style>
+                                       <class name="destructive-action"/>
+                                     </style>
+                                   </object>
+                                 </child>
+                               </object>
+                             </child>
+
+                           </object>
+                        </child>
+
                         <child>
                           <object class="AdwPreferencesGroup">
                             <property name="title">Text Layers</property>

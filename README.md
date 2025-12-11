@@ -15,12 +15,10 @@
 <p align="left">
   <a href="https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist">
     <img src="https://img.shields.io/badge/📦_Copr-294172?style=for-the-badge&logo=fedora&logoColor=white" alt="Copr">
-  </a>
-  <br /> <a href="https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/">
-    <img src="https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/status_image/last_build.png" />
-  </a>  
+  </a> 
 </p>
 
+[![Copr build status](https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/)
 
 
 ---

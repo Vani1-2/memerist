@@ -22,7 +22,6 @@
 
         <child type="top">
           <object class="AdwHeaderBar">
-
             <child type="start">
               <object class="GtkBox">
                 <property name="spacing">6</property>
@@ -91,7 +90,6 @@
                         <child>
                           <object class="GtkStack" id="content_stack">
                             <property name="transition-type">crossfade</property>
-
                             <child>
                               <object class="GtkStackPage">
                                 <property name="name">empty</property>
@@ -99,20 +97,16 @@
                                   <object class="AdwStatusPage">
                                     <property name="icon-name">image-x-generic-symbolic</property>
                                     <property name="title">No Image Loaded</property>
-                                    <property name="description">Open an image to start editing</property>
                                   </object>
                                 </property>
                               </object>
                             </child>
-
                             <child>
                               <object class="GtkStackPage">
                                 <property name="name">content</property>
                                 <property name="child">
                                   <object class="GtkFrame">
-                                    <style>
-                                      <class name="card"/>
-                                    </style>
+                                    <style><class name="card"/></style>
                                     <child>
                                       <object class="GtkImage" id="meme_preview">
                                         <property name="icon-name">image-x-generic-symbolic</property>
@@ -123,7 +117,6 @@
                                 </property>
                               </object>
                             </child>
-
                           </object>
                         </child>
                       </object>
@@ -148,32 +141,44 @@
                     </child>
 
                     <child>
-                      <object class="AdwSpinRow" id="layer_opacity_scale">
+                      <object class="AdwActionRow">
                         <property name="title">Opacity</property>
-                        <property name="digits">1</property>
-                        <property name="adjustment">
-                          <object class="GtkAdjustment">
-                            <property name="lower">0.0</property>
-                            <property name="upper">1.0</property>
-                            <property name="value">1.0</property>
-                            <property name="step-increment">0.1</property>
+                        <child>
+                          <object class="GtkScale" id="layer_opacity_scale">
+                            <property name="hexpand">true</property>
+                            <property name="width-request">150</property>
+                            <property name="draw-value">true</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0.0</property>
+                                <property name="upper">1.0</property>
+                                <property name="value">1.0</property>
+                                <property name="step-increment">0.1</property>
+                              </object>
+                            </property>
                           </object>
-                        </property>
+                        </child>
                       </object>
                     </child>
 
                     <child>
-                      <object class="AdwSpinRow" id="layer_rotation_scale">
-                         <property name="title">Rotation</property>
-                         <property name="digits">1</property>
-                         <property name="adjustment">
-                            <object class="GtkAdjustment">
-                               <property name="lower">0.0</property>
-                               <property name="upper">6.28</property>
-                               <property name="value">0.0</property>
-                               <property name="step-increment">0.1</property>
-                            </object>
-                         </property>
+                      <object class="AdwActionRow">
+                        <property name="title">Rotation</property>
+                        <child>
+                           <object class="GtkScale" id="layer_rotation_scale">
+                            <property name="hexpand">true</property>
+                            <property name="width-request">150</property>
+                            <property name="draw-value">false</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0.0</property>
+                                <property name="upper">6.28</property>
+                                <property name="value">0.0</property>
+                                <property name="step-increment">0.1</property>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
                       </object>
                     </child>
 
@@ -183,10 +188,7 @@
                         <child type="suffix">
                           <object class="GtkButton" id="delete_layer_button">
                             <property name="icon-name">user-trash-symbolic</property>
-                            <property name="tooltip-text">Delete Layer</property>
-                            <style>
-                              <class name="destructive-action"/>
-                            </style>
+                            <style><class name="destructive-action"/></style>
                           </object>
                         </child>
                       </object>
@@ -197,14 +199,12 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Text Layers</property>
-
                     <child>
                       <object class="AdwEntryRow" id="top_text_entry">
                         <property name="title">Top Text</property>
                         <child type="suffix">
                           <object class="GtkSpinButton" id="top_text_size">
                             <property name="valign">center</property>
-                            <property name="tooltip-text">Font Size</property>
                             <property name="adjustment">
                               <object class="GtkAdjustment">
                                 <property name="lower">10</property>
@@ -224,7 +224,6 @@
                         <child type="suffix">
                           <object class="GtkSpinButton" id="bottom_text_size">
                              <property name="valign">center</property>
-                             <property name="tooltip-text">Font Size</property>
                              <property name="adjustment">
                                 <object class="GtkAdjustment">
                                    <property name="lower">10</property>
@@ -240,7 +239,7 @@
                   </object>
                 </child>
 
-                <child>
+                 <child>
                    <object class="AdwPreferencesGroup">
                       <property name="title">Templates</property>
                       <child>
@@ -251,6 +250,13 @@
                                   <property name="icon-name">list-add-symbolic</property>
                                   <style><class name="flat"/></style>
                                </object>
+                            </child>
+                            <child type="suffix">
+                                <object class="GtkButton" id="delete_template_button">
+                                  <property name="icon-name">user-trash-symbolic</property>
+                                  <property name="sensitive">false</property>
+                                  <style><class name="flat"/></style>
+                                </object>
                             </child>
                             <child>
                                <object class="GtkBox">
@@ -299,9 +305,7 @@
                       <property name="icon-name">weather-severe-alert-symbolic</property>
                       <property name="tooltip-text">Deep Fry</property>
                       <property name="sensitive">false</property>
-                      <style>
-                        <class name="warning"/>
-                      </style>
+                      <style><class name="warning"/></style>
                     </object>
                  </child>
                </object>
@@ -312,9 +316,7 @@
                 <property name="icon-name">edit-clear-symbolic</property>
                 <property name="tooltip-text">Clear Canvas</property>
                 <property name="sensitive">false</property>
-                <style>
-                  <class name="destructive-action"/>
-                </style>
+                <style><class name="destructive-action"/></style>
               </object>
             </child>
           </object>

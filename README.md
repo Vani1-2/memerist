@@ -34,11 +34,11 @@
 ## Screenshots
 
 <p align="center">
- <img width="800" alt="meme example 1" src="https://github.com/user-attachments/assets/310bd827-d776-49f7-bcef-73748233125a" />
+ <img width="800" alt="meme example 1" src="assets/screenshot1.png" />
 </p>
 
 <p align="center">
- <img width="800" alt="meme example 2" src="https://github.com/user-attachments/assets/cce1977f-894b-4fa0-a4da-67af3a7b3e81" />
+ <img width="800" alt="meme example 2" src="assets/screenshot2.png"/>
 </p>
 
 

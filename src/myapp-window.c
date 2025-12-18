@@ -78,7 +78,7 @@ struct _MyappWindow
   GtkSpinButton   *bottom_text_size;
   GtkFlowBox      *template_gallery;
 
-  /* New UI Controls */
+  // UI Controls
   GtkToggleButton *cinematic_button;
   GtkScale        *layer_opacity_scale;
   GtkScale        *layer_rotation_scale;
@@ -124,7 +124,6 @@ static void on_drag_end (GtkGestureDrag *gesture, double offset_x, double offset
 static void on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWindow *self);
 static void populate_template_gallery (MyappWindow *self);
 static void on_deep_fry_toggled (GtkToggleButton *btn, MyappWindow *self);
-/* These are the new ones needed for the UI */
 static void on_layer_control_changed (MyappWindow *self);
 static void on_delete_layer_clicked (MyappWindow *self);
 static void sync_ui_with_layer(MyappWindow *self);
@@ -292,7 +291,9 @@ myapp_window_init (MyappWindow *self)
   g_signal_connect (self->template_gallery, "child-activated", G_CALLBACK (on_template_selected), self);
 
 
-  g_signal_connect (self->cinematic_button, "toggled", G_CALLBACK (on_text_changed), self);
+
+
+  g_signal_connect_swapped (self->cinematic_button, "toggled", G_CALLBACK (on_text_changed), self);
   g_signal_connect_swapped (self->layer_opacity_scale, "value-changed", G_CALLBACK (on_layer_control_changed), self);
   g_signal_connect_swapped (self->layer_rotation_scale, "value-changed", G_CALLBACK (on_layer_control_changed), self);
   g_signal_connect_swapped (self->blend_mode_row, "notify::selected", G_CALLBACK (on_layer_control_changed), self);
@@ -863,21 +864,31 @@ draw_text_with_outline (cairo_t *cr, const char *text, double x, double y, doubl
 static GdkPixbuf *
 apply_saturation_contrast (GdkPixbuf *src, double sat, double contrast)
 {
-  int w = gdk_pixbuf_get_width (src);
-  int h = gdk_pixbuf_get_height (src);
-  int stride = gdk_pixbuf_get_rowstride (src);
-  int n_channels = gdk_pixbuf_get_n_channels (src);
+  GdkPixbuf *copy;
+  int w, h, stride, n_channels;
   int x, y;
-  guchar *pixels, *p;
-  GdkPixbuf *copy = gdk_pixbuf_copy (src);
+  guchar *pixels, *row_ptr, *p;
+  double r, g, b, gray;
 
+  if (src == NULL) return NULL;
+
+  copy = gdk_pixbuf_copy (src);
+  if (copy == NULL) return NULL;
+
+  w = gdk_pixbuf_get_width (copy);
+  h = gdk_pixbuf_get_height (copy);
+  stride = gdk_pixbuf_get_rowstride (copy);
+  n_channels = gdk_pixbuf_get_n_channels (copy);
   pixels = gdk_pixbuf_get_pixels (copy);
 
   for (y = 0; y < h; y++) {
+    row_ptr = pixels + (y * stride);
     for (x = 0; x < w; x++) {
-      double r, g, b, gray;
-      p = pixels + y * stride + x * n_channels;
-      r = p[0]; g = p[1]; b = p[2];
+      p = row_ptr + (x * n_channels);
+
+      r = (double)p[0];
+      g = (double)p[1];
+      b = (double)p[2];
 
       gray = 0.299 * r + 0.587 * g + 0.114 * b;
       r = gray + (r - gray) * sat;
@@ -888,9 +899,12 @@ apply_saturation_contrast (GdkPixbuf *src, double sat, double contrast)
       g = (g - 128.0) * contrast + 128.0;
       b = (b - 128.0) * contrast + 128.0;
 
-      p[0] = CLAMP_U8(r); p[1] = CLAMP_U8(g); p[2] = CLAMP_U8(b);
+      p[0] = CLAMP_U8((int)r);
+      p[1] = CLAMP_U8((int)g);
+      p[2] = CLAMP_U8((int)b);
     }
   }
+
   return copy;
 }
 
@@ -898,23 +912,27 @@ apply_saturation_contrast (GdkPixbuf *src, double sat, double contrast)
 static GdkPixbuf *
 apply_deep_fry (GdkPixbuf *src)
 {
-  int width = gdk_pixbuf_get_width (src);
-  int height = gdk_pixbuf_get_height (src);
-  int n_channels = gdk_pixbuf_get_n_channels (src);
-  int rowstride = gdk_pixbuf_get_rowstride (src);
-  GdkPixbuf *fried, *shrunk, *final;
+  GdkPixbuf *fried = gdk_pixbuf_copy (src);
+
+
+  int width = gdk_pixbuf_get_width (fried);
+  int height = gdk_pixbuf_get_height (fried);
+  int n_channels = gdk_pixbuf_get_n_channels (fried);
+  int rowstride = gdk_pixbuf_get_rowstride (fried);
+
+  GdkPixbuf *shrunk, *final;
   guchar *pixels;
   double contrast = 2.0;
   int noise_level = 30;
   int x, y;
 
-  fried = gdk_pixbuf_copy (src);
   pixels = gdk_pixbuf_get_pixels (fried);
 
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x++) {
       int i;
       guchar *p = pixels + y * rowstride + x * n_channels;
+
       for (i = 0; i < 3; i++) {
         int noise = (rand() % (noise_level * 2 + 1)) - noise_level;
         int val = p[i] + noise;
@@ -964,6 +982,12 @@ render_meme (MyappWindow *self)
   GdkTexture *texture;
   GdkPixbuf *composite_pixbuf;
   GList *l;
+  ImageLayer *layer;
+  double scaled_w, scaled_h, draw_x, draw_y;
+  double hw, hh;
+  char *upper_text;
+  GdkPixbuf *cinematic;
+  GdkPixbuf *fried;
 
   if (self->template_image == NULL) return;
 
@@ -978,10 +1002,8 @@ render_meme (MyappWindow *self)
   cairo_paint (cr);
   cairo_restore (cr);
 
-  /* Render Layers with Rotation, Opacity, and Blend Modes */
   for (l = self->layers; l != NULL; l = l->next) {
-    ImageLayer *layer = (ImageLayer *)l->data;
-    double scaled_w, scaled_h, draw_x, draw_y;
+    layer = (ImageLayer *)l->data;
 
     if (!layer->pixbuf) continue;
 
@@ -993,7 +1015,6 @@ render_meme (MyappWindow *self)
 
     cairo_save (cr);
 
-    /* Move to center of layer -> Rotate -> Scale */
     cairo_translate (cr, draw_x, draw_y);
     cairo_rotate (cr, layer->rotation);
 
@@ -1003,7 +1024,6 @@ render_meme (MyappWindow *self)
     else cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
     cairo_scale (cr, layer->scale, layer->scale);
-    /* Draw offset by half size to center it */
     gdk_cairo_set_source_pixbuf (cr, layer->pixbuf, -layer->width/2.0, -layer->height/2.0);
 
     if (layer->opacity < 1.0) cairo_paint_with_alpha (cr, layer->opacity);
@@ -1012,7 +1032,6 @@ render_meme (MyappWindow *self)
     cairo_restore (cr);
 
     if (layer == self->selected_layer) {
-      double hw, hh;
       cairo_save(cr);
 
       cairo_translate (cr, draw_x, draw_y);
@@ -1036,7 +1055,6 @@ render_meme (MyappWindow *self)
     }
   }
 
-  /* Vignette */
   cairo_save (cr);
   pat = cairo_pattern_create_radial (width/2.0, height/2.0, width*0.3, width/2.0, height/2.0, width*0.8);
   cairo_pattern_add_color_stop_rgba (pat, 0, 0, 0, 0, 0.0);
@@ -1050,12 +1068,12 @@ render_meme (MyappWindow *self)
   bottom_text = gtk_editable_get_text (GTK_EDITABLE (self->bottom_text_entry));
 
   if (top_text && strlen (top_text) > 0) {
-    char *upper_text = g_utf8_strup (top_text, -1);
+    upper_text = g_utf8_strup (top_text, -1);
     draw_text_with_outline (cr, upper_text, width * self->top_text_x, height * self->top_text_y, gtk_spin_button_get_value (self->top_text_size));
     g_free (upper_text);
   }
   if (bottom_text && strlen (bottom_text) > 0) {
-    char *upper_text = g_utf8_strup (bottom_text, -1);
+    upper_text = g_utf8_strup (bottom_text, -1);
     draw_text_with_outline (cr, upper_text, width * self->bottom_text_x, height * self->bottom_text_y, gtk_spin_button_get_value (self->bottom_text_size));
     g_free (upper_text);
   }
@@ -1067,36 +1085,44 @@ render_meme (MyappWindow *self)
   composite_pixbuf = gdk_pixbuf_get_from_surface (surface, 0, 0, width, height);
   G_GNUC_END_IGNORE_DEPRECATIONS
 
-  /* Cinematic Filter */
+  cairo_surface_destroy (surface);
+
+  if (composite_pixbuf == NULL) return;
+
   if (gtk_toggle_button_get_active(self->cinematic_button)) {
-      GdkPixbuf *cinematic = apply_saturation_contrast(composite_pixbuf, 1.15, 1.05);
-      g_object_unref(composite_pixbuf);
-      composite_pixbuf = cinematic;
+     cinematic = apply_saturation_contrast(composite_pixbuf, 1.15, 1.05);
+     if (cinematic != NULL) {
+        g_object_unref(composite_pixbuf);
+        composite_pixbuf = cinematic;
+     }
   }
 
   if (gtk_toggle_button_get_active (self->deep_fry_button)) {
-    GdkPixbuf *fried = apply_deep_fry (composite_pixbuf);
-    g_object_unref (composite_pixbuf);
-    composite_pixbuf = fried;
+    fried = apply_deep_fry (composite_pixbuf);
+    if (fried != NULL) {
+      g_object_unref (composite_pixbuf);
+      composite_pixbuf = fried;
+    }
   }
 
   g_clear_object (&self->final_meme);
   self->final_meme = composite_pixbuf;
 
-  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-  texture = gdk_texture_new_for_pixbuf (self->final_meme);
-  G_GNUC_END_IGNORE_DEPRECATIONS
-  gtk_image_set_from_paintable (self->meme_preview, GDK_PAINTABLE (texture));
-  g_object_unref (texture);
-  cairo_surface_destroy (surface);
+  if (self->final_meme != NULL) {
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    texture = gdk_texture_new_for_pixbuf (self->final_meme);
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    gtk_image_set_from_paintable (self->meme_preview, GDK_PAINTABLE (texture));
+    g_object_unref (texture);
+  }
 }
 
-//butto for deep fry
+//button for deep fry
 static void on_deep_fry_toggled (GtkToggleButton *btn, MyappWindow *self) {
   if (self->template_image) render_meme (self);
 }
 
-//Deep Fry LMAO, Tangina mo
+//Deep Fry LMAO
 static void on_load_image_response (GObject *s, GAsyncResult *r, gpointer d) {
   GtkFileDialog *dialog = GTK_FILE_DIALOG (s);
   MyappWindow *self = MYAPP_WINDOW (d);

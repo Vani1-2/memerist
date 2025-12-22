@@ -56,8 +56,11 @@ Download the latest `.deb` file using this command( only available as amd64 )
 ```bash
 curl -L -O https://raw.githubusercontent.com/Vani1-2/gnome-meme-editor/main/deb-build/memerist-amd64.deb
 ```
-
-
+After downloading the `.deb` file install it via this command:
+```bash
+sudo apt install ./memerist-amd64.deb
+```
+or just double click the `.deb` file and let your software manager do install it.
 
 
 ### Building from Source

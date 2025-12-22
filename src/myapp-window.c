@@ -167,9 +167,11 @@ static void
 free_image_layer (gpointer data)
 {
   ImageLayer *layer = (ImageLayer *)data;
-  if (layer->pixbuf)
-    g_object_unref (layer->pixbuf);
-  g_free (layer);
+  if (layer) {
+    if (layer->pixbuf)
+      g_object_unref (layer->pixbuf);
+    g_free (layer);
+  }
 }
 
 static void
@@ -290,9 +292,6 @@ myapp_window_init (MyappWindow *self)
   g_signal_connect (self->deep_fry_button, "toggled", G_CALLBACK (on_deep_fry_toggled), self);
   g_signal_connect (self->template_gallery, "child-activated", G_CALLBACK (on_template_selected), self);
 
-
-
-
   g_signal_connect_swapped (self->cinematic_button, "toggled", G_CALLBACK (on_text_changed), self);
   g_signal_connect_swapped (self->layer_opacity_scale, "value-changed", G_CALLBACK (on_layer_control_changed), self);
   g_signal_connect_swapped (self->layer_rotation_scale, "value-changed", G_CALLBACK (on_layer_control_changed), self);
@@ -319,8 +318,9 @@ myapp_window_init (MyappWindow *self)
 
 static void
 sync_ui_with_layer(MyappWindow *self) {
-    if (self->selected_layer) {
+    gboolean sensitive = (self->selected_layer != NULL);
 
+    if (sensitive) {
         g_signal_handlers_block_by_func(self->layer_opacity_scale, on_layer_control_changed, self);
         g_signal_handlers_block_by_func(self->layer_rotation_scale, on_layer_control_changed, self);
 
@@ -330,17 +330,12 @@ sync_ui_with_layer(MyappWindow *self) {
 
         g_signal_handlers_unblock_by_func(self->layer_opacity_scale, on_layer_control_changed, self);
         g_signal_handlers_unblock_by_func(self->layer_rotation_scale, on_layer_control_changed, self);
-
-        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_opacity_scale), TRUE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_rotation_scale), TRUE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->blend_mode_row), TRUE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->delete_layer_button), TRUE);
-    } else {
-        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_opacity_scale), FALSE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->layer_rotation_scale), FALSE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->blend_mode_row), FALSE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->delete_layer_button), FALSE);
     }
+
+    gtk_widget_set_sensitive(GTK_WIDGET(self->layer_opacity_scale), sensitive);
+    gtk_widget_set_sensitive(GTK_WIDGET(self->layer_rotation_scale), sensitive);
+    gtk_widget_set_sensitive(GTK_WIDGET(self->blend_mode_row), sensitive);
+    gtk_widget_set_sensitive(GTK_WIDGET(self->delete_layer_button), sensitive);
 }
 
 
@@ -537,6 +532,12 @@ on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWi
   double ww, wh, w_ratio, h_ratio, screen_scale;
   gboolean found_hover = FALSE;
   GList *l;
+  ImageLayer *layer;
+  double half_w_scaled, half_h_scaled;
+  double left, right, top, bottom;
+  double corner_x, corner_y;
+  gboolean near_left, near_right, near_top, near_bottom;
+  const char *cursor_name;
 
   if (self->template_image == NULL) {
     gtk_widget_set_cursor (GTK_WIDGET (self->meme_preview), NULL);
@@ -554,33 +555,28 @@ on_mouse_move (GtkEventControllerMotion *controller, double x, double y, MyappWi
   screen_scale = (w_ratio < h_ratio) ? w_ratio : h_ratio;
 
   for (l = g_list_last(self->layers); l != NULL; l = l->prev) {
-    ImageLayer *layer = (ImageLayer *)l->data;
-    double half_w, half_h, left, right, top, bottom;
-    double corner_x, corner_y;
+    layer = (ImageLayer *)l->data;
 
-    half_w = (layer->width * layer->scale) / 2.0 / img_w;
-    half_h = (layer->height * layer->scale) / 2.0 / img_h;
+    half_w_scaled = (layer->width * layer->scale) / (2.0 * img_w);
+    half_h_scaled = (layer->height * layer->scale) / (2.0 * img_h);
 
-    left = layer->x - half_w;
-    right = layer->x + half_w;
-    top = layer->y - half_h;
-    bottom = layer->y + half_h;
+    left = layer->x - half_w_scaled;
+    right = layer->x + half_w_scaled;
+    top = layer->y - half_h_scaled;
+    bottom = layer->y + half_h_scaled;
 
     corner_x = 20.0 / (img_w * screen_scale);
     corner_y = 20.0 / (img_h * screen_scale);
 
     if (layer == self->selected_layer) {
-      gboolean near_left = fabs(rel_x - left) < corner_x;
-      gboolean near_right = fabs(rel_x - right) < corner_x;
-      gboolean near_top = fabs(rel_y - top) < corner_y;
-      gboolean near_bottom = fabs(rel_y - bottom) < corner_y;
+      near_left = fabs(rel_x - left) < corner_x;
+      near_right = fabs(rel_x - right) < corner_x;
+      near_top = fabs(rel_y - top) < corner_y;
+      near_bottom = fabs(rel_y - bottom) < corner_y;
 
       if ((near_left || near_right) && (near_top || near_bottom)) {
-        if ((near_left && near_top) || (near_right && near_bottom))
-          gtk_widget_set_cursor_from_name (GTK_WIDGET (self->meme_preview), "nw-se-resize");
-        else
-          gtk_widget_set_cursor_from_name (GTK_WIDGET (self->meme_preview), "nesw-resize");
-
+        cursor_name = ((near_left && near_top) || (near_right && near_bottom)) ? "nw-se-resize" : "nesw-resize";
+        gtk_widget_set_cursor_from_name (GTK_WIDGET (self->meme_preview), cursor_name);
         found_hover = TRUE;
         break;
       }
@@ -609,6 +605,11 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
   double top_fs, bottom_fs;
   double top_threshold, bottom_threshold;
   double dist_top, dist_bottom;
+  ImageLayer *layer;
+  double half_w_scaled, half_h_scaled;
+  double left, right, top, bottom;
+  double corner_x, corner_y;
+  gboolean near_corner;
 
   if (self->template_image == NULL) return;
 
@@ -623,23 +624,21 @@ on_drag_begin (GtkGestureDrag *gesture, double x, double y, MyappWindow *self)
   screen_scale = (w_ratio < h_ratio) ? w_ratio : h_ratio;
 
   for (l = g_list_last(self->layers); l != NULL; l = l->prev) {
-    ImageLayer *layer = (ImageLayer *)l->data;
-    double half_w, half_h, left, right, top, bottom;
-    double corner_x, corner_y;
+    layer = (ImageLayer *)l->data;
 
-    half_w = (layer->width * layer->scale) / 2.0 / img_w;
-    half_h = (layer->height * layer->scale) / 2.0 / img_h;
+    half_w_scaled = (layer->width * layer->scale) / (2.0 * img_w);
+    half_h_scaled = (layer->height * layer->scale) / (2.0 * img_h);
 
-    left = layer->x - half_w;
-    right = layer->x + half_w;
-    top = layer->y - half_h;
-    bottom = layer->y + half_h;
+    left = layer->x - half_w_scaled;
+    right = layer->x + half_w_scaled;
+    top = layer->y - half_h_scaled;
+    bottom = layer->y + half_h_scaled;
 
     corner_x = 20.0 / (img_w * screen_scale);
     corner_y = 20.0 / (img_h * screen_scale);
 
     if (layer == self->selected_layer) {
-      gboolean near_corner =
+      near_corner =
         (fabs(rel_x - left) < corner_x || fabs(rel_x - right) < corner_x) &&
         (fabs(rel_y - top) < corner_y || fabs(rel_y - bottom) < corner_y);
 
@@ -730,6 +729,7 @@ on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, Myapp
   else if (self->drag_type == DRAG_TYPE_IMAGE_RESIZE && self->selected_layer) {
     double cx, cy, start_dx, start_dy, start_dist;
     double current_img_x, current_img_y, cur_dx, cur_dy, cur_dist;
+    double ratio;
 
     cx = self->selected_layer->x * img_w;
     cy = self->selected_layer->y * img_h;
@@ -746,7 +746,7 @@ on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, Myapp
     cur_dist = sqrt(cur_dx*cur_dx + cur_dy*cur_dy);
 
     if (start_dist > 5.0) {
-      double ratio = cur_dist / start_dist;
+      ratio = cur_dist / start_dist;
       self->selected_layer->scale = CLAMP (self->drag_obj_start_scale * ratio, 0.1, 5.0);
     }
   }
@@ -791,8 +791,6 @@ on_add_image_response (GObject *source, GAsyncResult *result, gpointer user_data
     new_layer->x = 0.5;
     new_layer->y = 0.5;
     new_layer->scale = 1.0;
-
-
     new_layer->opacity = 1.0;
     new_layer->rotation = 0.0;
     new_layer->blend_mode = BLEND_NORMAL;
@@ -869,6 +867,7 @@ apply_saturation_contrast (GdkPixbuf *src, double sat, double contrast)
   int x, y;
   guchar *pixels, *row_ptr, *p;
   double r, g, b, gray;
+  double one_minus_sat = 1.0 - sat;
 
   if (src == NULL) return NULL;
 
@@ -891,9 +890,9 @@ apply_saturation_contrast (GdkPixbuf *src, double sat, double contrast)
       b = (double)p[2];
 
       gray = 0.299 * r + 0.587 * g + 0.114 * b;
-      r = gray + (r - gray) * sat;
-      g = gray + (g - gray) * sat;
-      b = gray + (b - gray) * sat;
+      r = gray * one_minus_sat + r * sat;
+      g = gray * one_minus_sat + g * sat;
+      b = gray * one_minus_sat + b * sat;
 
       r = (r - 128.0) * contrast + 128.0;
       g = (g - 128.0) * contrast + 128.0;
@@ -913,8 +912,6 @@ static GdkPixbuf *
 apply_deep_fry (GdkPixbuf *src)
 {
   GdkPixbuf *fried = gdk_pixbuf_copy (src);
-
-
   int width = gdk_pixbuf_get_width (fried);
   int height = gdk_pixbuf_get_height (fried);
   int n_channels = gdk_pixbuf_get_n_channels (fried);
@@ -925,18 +922,21 @@ apply_deep_fry (GdkPixbuf *src)
   double contrast = 2.0;
   int noise_level = 30;
   int x, y;
+  int i, noise, val;
+  guchar *row, *p;
+  double c_val;
 
   pixels = gdk_pixbuf_get_pixels (fried);
 
   for (y = 0; y < height; y++) {
+    row = pixels + y * rowstride;
     for (x = 0; x < width; x++) {
-      int i;
-      guchar *p = pixels + y * rowstride + x * n_channels;
+      p = row + x * n_channels;
 
       for (i = 0; i < 3; i++) {
-        int noise = (rand() % (noise_level * 2 + 1)) - noise_level;
-        int val = p[i] + noise;
-        double c_val = ((double)val - 128.0) * contrast + 128.0;
+        noise = (rand() % (noise_level * 2 + 1)) - noise_level;
+        val = p[i] + noise;
+        c_val = ((double)val - 128.0) * contrast + 128.0;
         p[i] = CLAMP_U8 ((int)c_val);
       }
     }
@@ -1046,11 +1046,13 @@ render_meme (MyappWindow *self)
       cairo_stroke (cr);
 
       cairo_set_source_rgb (cr, 1, 1, 1);
-
-      cairo_arc (cr, -hw, -hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
-      cairo_arc (cr, hw, -hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
-      cairo_arc (cr, -hw, hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
-      cairo_arc (cr, hw, hh, 6, 0, 2*M_PI); cairo_fill_preserve(cr); cairo_stroke(cr);
+      cairo_new_path(cr);
+      cairo_arc (cr, -hw, -hh, 6, 0, 2*M_PI); cairo_close_path(cr);
+      cairo_arc (cr, hw, -hh, 6, 0, 2*M_PI); cairo_close_path(cr);
+      cairo_arc (cr, -hw, hh, 6, 0, 2*M_PI); cairo_close_path(cr);
+      cairo_arc (cr, hw, hh, 6, 0, 2*M_PI); cairo_close_path(cr);
+      cairo_fill_preserve(cr);
+      cairo_stroke(cr);
       cairo_restore(cr);
     }
   }

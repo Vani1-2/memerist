@@ -378,13 +378,23 @@ is_user_template (const char *path)
 static void
 add_file_to_gallery (MyappWindow *self, const char *full_path)
 {
-  GtkWidget *picture = gtk_picture_new_for_filename (full_path);
+  GtkWidget *picture;
+
+
+  if (g_str_has_prefix (full_path, "resource://")) {
+    picture = gtk_picture_new_for_resource (full_path + 11);
+  } else {
+    picture = gtk_picture_new_for_filename (full_path);
+  }
+
   gtk_picture_set_can_shrink (GTK_PICTURE (picture), TRUE);
   gtk_picture_set_content_fit (GTK_PICTURE (picture), GTK_CONTENT_FIT_CONTAIN);
   gtk_widget_set_size_request (picture, 120, 120);
   g_object_set_data_full (G_OBJECT (picture), "template-path", g_strdup (full_path), g_free);
   gtk_flow_box_append (self->template_gallery, picture);
 }
+
+
 
 static void
 scan_directory_for_templates (MyappWindow *self, const char *dir_path)
@@ -402,20 +412,39 @@ scan_directory_for_templates (MyappWindow *self, const char *dir_path)
   g_dir_close (dir);
 }
 
+
+static void
+scan_resources_for_templates (MyappWindow *self)
+{
+  GError *error = NULL;
+
+  const char *res_path = "/io/github/vani1_2/memerist/templates";
+  char **files = g_resources_enumerate_children (res_path, 0, &error);
+
+  if (files) {
+    for (int i = 0; files[i] != NULL; i++) {
+      char *full_uri = g_strdup_printf ("resource://%s/%s", res_path, files[i]);
+      add_file_to_gallery (self, full_uri);
+      g_free (full_uri);
+    }
+    g_strfreev (files);
+  }
+}
+
+
+
+
 static void
 populate_template_gallery (MyappWindow *self)
 {
   char *user_dir;
-#ifdef TEMPLATE_DIR
-  scan_directory_for_templates (self, TEMPLATE_DIR);
-#else
-scan_directory_for_templates (self, "/usr/share/io.github.vani1_2.memerist/templates");
-#endif
+  scan_resources_for_templates (self);
   user_dir = get_user_template_dir ();
   g_mkdir_with_parents (user_dir, 0755);
   scan_directory_for_templates (self, user_dir);
   g_free (user_dir);
 }
+
 
 static void
 on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, MyappWindow *self)
@@ -427,8 +456,8 @@ on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, MyappWindow *
   if (!child) { gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), FALSE); return; }
   image = gtk_flow_box_child_get_child (child);
   template_path = g_object_get_data (G_OBJECT (image), "template-path");
-  if (!template_path) return;
 
+  if (!template_path) return;
   gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), is_user_template (template_path));
   g_clear_object (&self->template_image);
 
@@ -438,7 +467,12 @@ on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, MyappWindow *
     self->selected_layer = NULL;
   }
 
-  self->template_image = gdk_pixbuf_new_from_file (template_path, &error);
+  if (g_str_has_prefix (template_path, "resource://")) {
+      self->template_image = gdk_pixbuf_new_from_resource (template_path + 11, &error);
+  } else {
+      self->template_image = gdk_pixbuf_new_from_file (template_path, &error);
+  }
+
   if (error) { g_warning ("Load failed: %s", error->message); g_error_free (error); return; }
 
   gtk_stack_set_visible_child_name (self->content_stack, "content");

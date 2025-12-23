@@ -3,5 +3,17 @@
   <gresource prefix="/io/github/vani1_2/memerist">
     <file preprocess="xml-stripblanks">myapp-window.ui</file>
     <file preprocess="xml-stripblanks">shortcuts-dialog.ui</file>
+    <file>templates/template1.jpeg</file>
+    <file>templates/template2.jpeg</file>
+    <file>templates/template3.jpg</file>
+    <file>templates/template4.jpeg</file>
+    <file>templates/template5.jpg</file>
+    <file>templates/template6.jpeg</file>
+    <file>templates/template7.jpeg</file>
+    <file>templates/template8.jpg</file>
+    <file>templates/template9.jpeg</file>
+    <file>templates/template10.jpeg</file>
+    <file>templates/template11.jpg</file>
+    <file>templates/template12.jpg</file>
   </gresource>
 </gresources>

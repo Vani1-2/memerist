@@ -32,9 +32,9 @@ EOF
 # NOTE: All of the code below should be commented or removed if you are on debian
 # system as you only need this if you have distrobox with an ubuntu image to build
 # a native .deb package
-distrobox enter ubuntu -- bash -c '
+distrobox enter Ubuntu -- bash -c '
   cp build/src/memerist deb-build/memerist-amd64/usr/bin/
   dpkg-deb --build deb-build/memerist-amd64
 '
 
-distrobox-stop ubuntu -Y
+distrobox-stop Ubuntu -Y

@@ -26,8 +26,6 @@ Create memes with custom text overlays using a native GNOME interface.
 %{_datadir}/glib-2.0/schemas/io.github.vani1_2.memerist.gschema.xml
 %{_datadir}/icons/hicolor/scalable/apps/io.github.vani1_2.memerist.svg
 %{_datadir}/icons/hicolor/symbolic/apps/io.github.vani1_2.memerist-symbolic.svg
-%dir %{_datadir}/io.github.vani1_2.memerist
-%{_datadir}/io.github.vani1_2.memerist/templates/
 
 
 %changelog

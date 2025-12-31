@@ -21,7 +21,7 @@ jobs:
     - name: Install Build Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y meson ninja-build libgtk-4-dev libadwaita-1-dev gettext
+        sudo apt-get install -y meson ninja-build libgtk-4-dev libadwaita-1-dev gettext desktop-file-utils
 
 
     - name: Compile (Meson)

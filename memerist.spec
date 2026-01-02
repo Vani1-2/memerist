@@ -1,6 +1,6 @@
 Name:           memerist
 Version:        0.1.5
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Meme generator with text overlays
 License:        GPL-3.0-or-later
 URL:            https://github.com/Vani1-2/gnome-meme-editor
@@ -26,8 +26,9 @@ Create memes with custom text overlays using a native GNOME interface.
 %{_datadir}/glib-2.0/schemas/io.github.vani1_2.memerist.gschema.xml
 %{_datadir}/icons/hicolor/scalable/apps/io.github.vani1_2.memerist.svg
 %{_datadir}/icons/hicolor/symbolic/apps/io.github.vani1_2.memerist-symbolic.svg
+%{_datadir}/metainfo/io.github.vani1_2.memerist.metainfo.xml
 
 
 %changelog
-* Sun Dec 07 2025 Vani1-2 <giovannirafanan609@gmail.com> - 0.1.5-2
-- metainfo tweaks
+* Sun Dec 07 2025 Vani1-2 <giovannirafanan609@gmail.com> - 0.1.5-3
+- meson build and spec file tweaks

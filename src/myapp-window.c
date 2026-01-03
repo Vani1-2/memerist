@@ -1206,6 +1206,9 @@ static void render_meme (MyappWindow *self) {
   }
 }
 
+//ngl this is so ass, I think im gonna move other functions to a different file
+// like editing.c and import its header files or something
+
 //button for deep fry
 static void on_deep_fry_toggled (GtkToggleButton *btn, MyappWindow *self) {
   if (self->template_image) render_meme (self);

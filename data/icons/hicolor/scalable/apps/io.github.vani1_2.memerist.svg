@@ -24,7 +24,7 @@
   <g filter="url(#shadow)">
     <rect x="16" y="16" width="96" height="96" rx="8" ry="8" fill="url(#baseGradient)"/>
     <circle cx="80" cy="40" r="12" fill="url(#sunGradient)" opacity="0.9"/>
-    <path d="M 16 80 L 40 50 L 70 90 L 90 70 L 112 100 V 104 H 16 Z" fill="#1c71d8" opacity="0.5"/>
+    <path d="M 15.379 86.426 L 39.089 56.593 L 68.728 96.37 L 88.486 76.481 L 110.221 106.314 L 110.221 110.292 L 15.379 110.292 L 15.379 86.426 Z" fill="#1c71d8" opacity="0.5" style=""/>
     <path d="M 16 112 L 16 90 L 50 112 Z" fill="#1a5fb4" opacity="0.4"/>
     <rect x="16" y="16" width="96" height="96" rx="8" ry="8" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
     <path d="M 24 17 H 104 A 7 7 0 0 1 111 24 V 104 A 7 7 0 0 1 104 111 H 24 A 7 7 0 0 1 17 104 V 24 A 7 7 0 0 1 24 17 Z" fill="none" stroke="white" stroke-opacity="0.15" stroke-width="1"/>

@@ -1312,15 +1312,17 @@ static void render_meme (MyappWindow *self) {
   if (composite_pixbuf == NULL) return;
 
 
-  if (gtk_toggle_button_get_active(self->cinematic_button)) {
-     cinematic = apply_saturation_contrast(composite_pixbuf, 1.15, 1.05);
-     if (cinematic) { g_object_unref(composite_pixbuf); composite_pixbuf = cinematic; }
-  }
-
-  if (gtk_toggle_button_get_active (self->deep_fry_button)) {
-    fried = apply_deep_fry (composite_pixbuf);
-    if (fried) { g_object_unref (composite_pixbuf); composite_pixbuf = fried; }
-  }
+  if (self->drag_type == DRAG_TYPE_NONE) { 
+    if (gtk_toggle_button_get_active(self->cinematic_button)) {
+            cinematic = apply_saturation_contrast(composite_pixbuf, 1.15, 1.05);
+            if (cinematic) { g_object_unref(composite_pixbuf); composite_pixbuf = cinematic; }
+        }
+  
+    if (gtk_toggle_button_get_active (self->deep_fry_button)) {
+            fried = apply_deep_fry (composite_pixbuf);
+            if (fried) { g_object_unref (composite_pixbuf); composite_pixbuf = fried; }
+        }
+    }
 
   g_clear_object (&self->final_meme);
   self->final_meme = composite_pixbuf;

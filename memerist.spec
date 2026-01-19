@@ -30,5 +30,6 @@ Create memes with custom text overlays using a native GNOME interface.
 
 
 %changelog
-* Sun Dec 07 2026 Vani1-2 <giovannirafanan609@gmail.com> - 0.2.3-1
-- moved delete button on the floating sidebar
+* Sun Dec 07 2026 Vani1-2 <giovannirafanan609@gmail.com> - 0.2.4-1
+- fixed translation generation
+- new app icon 

@@ -1,8 +1,8 @@
 # List of source files containing translatable strings.
 # Please keep this file sorted alphabetically.
-data/org.gnome.Example.desktop.in
-data/org.gnome.Example.metainfo.xml.in
-data/org.gnome.Example.gschema.xml
+data/io.github.vani1_2.memerist.desktop.in
+data/io.github.vani1_2.memerist.metainfo.xml.in
+data/io.github.vani1_2.memerist.gschema.xml
 src/main.c
 src/myapp-window.c
 src/myapp-window.ui

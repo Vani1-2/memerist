@@ -263,7 +263,7 @@
                                          <property name="step-increment">5</property>
                                    </object>
                                  </property>
-                              </object>
+                               </object>
                            </child>
                         </object>
                     </child>
@@ -305,12 +305,12 @@
                             <property name="width-request">100</property>
                             <property name="draw-value">false</property>
                             <property name="adjustment">
-                               <object class="GtkAdjustment">
+                              <object class="GtkAdjustment">
                                 <property name="lower">0.0</property>
                                 <property name="upper">6.28</property>
                                 <property name="value">0.0</property>
                                 <property name="step-increment">0.1</property>
-                             </object>
+                              </object>
                             </property>
                           </object>
                         </child>
@@ -346,7 +346,7 @@
                                   <child>
                                       <object class="GtkScrolledWindow">
                                         <property name="hexpand">true</property>
-                                        <child>
+                                         <child>
                                            <object class="GtkFlowBox" id="template_gallery">
                                               <property name="selection-mode">single</property>
                                               <property name="max-children-per-line">2</property>
@@ -424,7 +424,7 @@
                         <child>
                           <object class="GtkBox">
                             <property name="spacing">6</property>
-                            <child>
+                              <child>
                                <object class="GtkButton" id="crop_square_button">
                                  <property name="label">1:1</property>
                                  <style><class name="flat"/></style>
@@ -437,11 +437,25 @@
                                </object>
                             </child>
                             <child>
-                               <object class="GtkButton" id="crop_169_button">
+                              <object class="GtkButton" id="crop_169_button">
                                  <property name="label">16:9</property>
                                  <style><class name="flat"/></style>
                                </object>
                             </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">Apply Changes</property>
+                        <child>
+                          <object class="GtkButton" id="apply_crop_button">
+                            <property name="label">Apply Crop</property>
+                            <property name="valign">center</property>
+                            <style><class name="suggested-action"/></style>
+                            <signal name="clicked" handler="on_apply_crop_clicked" swapped="yes"/>
                           </object>
                         </child>
                       </object>

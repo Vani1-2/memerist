@@ -229,7 +229,6 @@ static void on_crop_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
     g_clear_object (&self->crop_session_template_snapshot);
     if (self->template_image)
         self->crop_session_template_snapshot = g_object_ref (self->template_image);
-    //adw_overlay_split_view_set_show_sidebar (self->split_view, TRUE);
     } else {
         gtk_widget_set_cursor (GTK_WIDGET (self->meme_preview), NULL);
     }
@@ -292,7 +291,6 @@ static void on_font_changed (GObject *object, GParamSpec *pspec, MemeWindow *sel
             g_free (self->selected_layer->font_family);
             self->selected_layer->font_family = pango_font_description_to_string (desc);
             render_meme (self);
-            // g_clear_object(&self->selected_layer->pixbuf);
             self->selected_layer->pixbuf = NULL;
         }
     }

@@ -21,6 +21,8 @@
 #pragma once
 
 #include <adwaita.h>
+#include <gtk/gtk.h>
+#include "meme-window.h"
 
 G_BEGIN_DECLS
 
@@ -30,5 +32,11 @@ G_DECLARE_FINAL_TYPE (MemeApplication, meme_application, MEME, APPLICATION, AdwA
 
 MemeApplication *meme_application_new (const char        *application_id,
                                          GApplicationFlags  flags);
+
+gboolean on_window_key_pressed (GtkEventControllerKey *controller,
+                                guint keyval,
+                                guint keycode,
+                                GdkModifierType state,
+                                MemeWindow *self);
 
 G_END_DECLS

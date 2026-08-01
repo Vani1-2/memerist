@@ -18,7 +18,6 @@ myapp_sources = [
   'meme-canvas.c',
   'meme-fileio.c',
   'meme-renderer.c',
-  'keyboard-shortcuts.c'
 ]
 
 myapp_deps = [

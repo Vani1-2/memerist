@@ -4,12 +4,8 @@
 
 # Memerist
 
-**Memes go BRRRRRRRRRRRRR**
-
-A modern meme editor built with GTK 4 and Libadwaita.
 </div>
 
-[![Copr build status](https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/vaniiiiii/memerist/package/memerist/)
 
 ## Installation
 

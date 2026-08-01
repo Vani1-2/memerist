@@ -8,7 +8,7 @@ BINS := meson ninja msgfmt appstreamcli \
 		xgettext gtk4-update-icon-cache update-desktop-database magick
 LIBS := gtk4 libadwaita-1 cairo epoxy gio-2.0
 
-.PHONY: all release run test install dist clean clean-all reconfigure fmt check-deps help
+.PHONY: all release run test install dist clean clean-all reconfigure check-deps help
 
 all: check-deps $(BUILD)/build.ninja
 	meson compile -C $(BUILD)
@@ -72,9 +72,6 @@ clean-all:
 reconfigure:
 	meson setup --reconfigure $(BUILD)
 
-fmt:
-	@command -v clang-format >/dev/null 2>&1 || { echo "Error: clang-format not found"; exit 1; }
-	find src -type f \( -name '*.[ch]' -o -name '*.[ch]pp' \) -exec clang-format -i {} +
 
 help:
 	@echo "Targets: all (debug), release, run, run-release, test, install, dist, clean, clean-all, reconfigure, fmt, check-deps"

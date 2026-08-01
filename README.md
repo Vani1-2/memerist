@@ -55,7 +55,6 @@ Optional packages to be installed:
 |--------------------------|-----------------------------------------------|
 | `appstream`              | Provides `appstreamcli` to validate the AppStream metadata     |
 | `desktop-file-utils`     | Provides `desktop-file-validate` and `update-desktop-database` |
-| `clang-tools-extra`      | Provides `clang-format`, used by `make fmt`                    |
 
 
 ### Build Instructions

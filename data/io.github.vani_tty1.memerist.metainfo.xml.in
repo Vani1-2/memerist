@@ -88,6 +88,19 @@
 
 	<releases>
 
+	    <release version="1.1.0" date="2026-08-4">
+			<url type="details">https://github.com/vani-tty1/memerist/releases/latest/</url>
+			<description>
+			  <p>
+			    This is a stable release with the following changes:
+			  </p>
+				<ul>
+				    <li>Redesigned crop overlay</li>
+				    <li>Improve crop overlay smoothness when draggin</li>
+				</ul>
+			</description>
+		  </release>
+
       <release version="1.0.0" date="2026-07-23">
 			<url type="details">https://github.com/vani-tty1/memerist/releases/latest/</url>
 			<description>

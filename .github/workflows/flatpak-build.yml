@@ -9,8 +9,23 @@ on:
       - ".copr"
 name: CI Build Flatpak
 jobs:
+  lint:
+    name: "Validate manifest"
+    runs-on: ubuntu-26.04
+    container:
+      image: ghcr.io/flathub/flatpak-builder-lint:latest
+      options: --entrypoint=
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Run flatpak-builder-lint
+        run: |
+          flatpak-builder-lint --gha-format manifest build-aux/io.github.vani_tty1.memerist.yml
+
   flatpak:
     name: "Flatpak"
+    needs: lint
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
       options: --privileged

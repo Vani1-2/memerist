@@ -1,6 +1,6 @@
 Name:           memerist
-Version:        1.0.0
-Release:        2%{?dist}
+Version:        1.1.0
+Release:        1%{?dist}
 Summary:        Meme generator with text overlays
 License:        GPL-3.0-or-later
 URL:            https://github.com/vani-tty1/memerist
@@ -35,8 +35,6 @@ Create memes with custom text overlays using a native GNOME interface.
 
 
 %changelog
-* Thu Jul 23 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 1.0.0-2
-- UI Overhaul. The UI is greatly overhauled to make it more organized.
-- UI now adapts better to different screen sizes/devices.
-- Fixed a bug where you cannot exit template selection on narrow window mode.
-- Support for opening files from the File Manager(e.g., Nautilus, Thunar, Dolphin) using the "Open With" option
+* Tue Aug 04 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 1.1.0-1
+- Redesigned crop overlay
+- Improve crop overlay smoothness when dragging

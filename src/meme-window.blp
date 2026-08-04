@@ -541,11 +541,20 @@ template $MemeWindow: Adw.ApplicationWindow {
                         margin-top: 10;
                         margin-bottom: 10;
 
-                        Picture meme_preview {
-                          content-fit: contain;
-                          can-shrink: true;
-                          hexpand: true;
-                          vexpand: false;
+                        Overlay {
+                          Picture meme_preview {
+                            content-fit: contain;
+                            can-shrink: true;
+                            hexpand: true;
+                            vexpand: false;
+                          }
+
+                          [overlay]
+                          DrawingArea crop_overlay_area {
+                            can-target: false;
+                            hexpand: true;
+                            vexpand: false;
+                          }
                         }
                       };
                     }

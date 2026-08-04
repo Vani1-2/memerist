@@ -163,7 +163,12 @@ void on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, 
             self->selected_layer->pixbuf = NULL;
         }
     }
-    render_meme(self);
+
+    if (self->drag_type == DRAG_TYPE_CROP_MOVE || self->drag_type == DRAG_TYPE_CROP_RESIZE) {
+        gtk_widget_queue_draw(GTK_WIDGET(self->crop_overlay_area));
+    } else {
+        render_meme(self);
+    }
 }
 
 void on_drag_end (GtkGestureDrag *g, double x, double y, MemeWindow *self) { 

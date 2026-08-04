@@ -15,3 +15,7 @@ GdkTexture *meme_render_editor_overlay (GdkPixbuf *composite,
                                         ImageLayer *selected_layer,
                                         gboolean crop_active,
                                         double cx, double cy, double cw, double ch);
+
+
+void meme_draw_crop_chrome (cairo_t *cr, double w, double h,
+                             double abs_x, double abs_y, double abs_w, double abs_h);

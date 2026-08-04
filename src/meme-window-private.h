@@ -13,6 +13,7 @@ struct _MemeWindow {
     AdwToastOverlay *copy_clip_feedback;
     GtkStack *content_stack;
     GtkPicture *meme_preview;
+    GtkDrawingArea *crop_overlay_area;
     GtkImage *add_text_button;
     AdwActionRow *font_choose_row;
     GtkFontDialogButton *font_choose_btn;

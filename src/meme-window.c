@@ -33,8 +33,30 @@ G_DEFINE_FINAL_TYPE (MemeWindow, meme_window, ADW_TYPE_APPLICATION_WINDOW)
 
 static void populate_template_gallery (MemeWindow *self);
 
+static void draw_crop_overlay (GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
+    MemeWindow *self = MEME_WINDOW (user_data);
+    double img_w, img_h, scale, off_x, off_y;
+
+    if (!self->template_image || !gtk_toggle_button_get_active (self->crop_mode_button))
+        return;
+
+    img_w = gdk_pixbuf_get_width (self->template_image);
+    img_h = gdk_pixbuf_get_height (self->template_image);
+    if (width <= 0 || height <= 0 || img_w <= 0 || img_h <= 0) return;
+
+    scale = MIN (width / img_w, height / img_h);
+    off_x = (width - img_w * scale) / 2.0;
+    off_y = (height - img_h * scale) / 2.0;
+
+    meme_draw_crop_chrome (cr, width, height,
+        off_x + self->crop_x * img_w * scale,
+        off_y + self->crop_y * img_h * scale,
+        self->crop_w * img_w * scale,
+        self->crop_h * img_h * scale);
+}
+
 void render_meme (MemeWindow *self) {
-    gboolean is_dragging, is_crop_drag, cinematic, deepfry, bw_button;
+    gboolean is_dragging, is_crop_drag, crop_active, cinematic, deepfry, bw_button;
     GdkTexture *tex;
 
     if (!self->template_image) return;
@@ -42,6 +64,7 @@ void render_meme (MemeWindow *self) {
     is_dragging = (self->drag_type != DRAG_TYPE_NONE);
     is_crop_drag = (self->drag_type == DRAG_TYPE_CROP_MOVE ||
                              self->drag_type == DRAG_TYPE_CROP_RESIZE);
+    crop_active = gtk_toggle_button_get_active(self->crop_mode_button);
     cinematic = gtk_toggle_button_get_active(self->cinematic_button);
     deepfry = gtk_toggle_button_get_active(self->deep_fry_button);
     bw_button = gtk_toggle_button_get_active(self->bw_button);
@@ -56,22 +79,20 @@ void render_meme (MemeWindow *self) {
                                         is_dragging);
     }
     gtk_widget_queue_draw(GTK_WIDGET(self->meme_preview));
-    if (is_dragging && !is_crop_drag) {
-        // FAST PATH: Skip the expensive blue overlay handles while dragging layers.
+
+    if (crop_active || (is_dragging && !is_crop_drag)) {
         tex = gdk_texture_new_for_pixbuf(self->final_meme);
     } else {
-        // SLOW PATH: Draw the selection handles AND the crop overlay.
         tex = meme_render_editor_overlay(
-            self->final_meme,
-            self->layers,
-            self->selected_layer,
-            gtk_toggle_button_get_active(self->crop_mode_button),
-            self->crop_x, self->crop_y, self->crop_w, self->crop_h
+            self->final_meme, self->layers, self->selected_layer,
+            FALSE, 0, 0, 0, 0
         );
     }
 
     gtk_picture_set_paintable(self->meme_preview, GDK_PAINTABLE(tex));
     g_object_unref(tex);
+
+    gtk_widget_queue_draw(GTK_WIDGET(self->crop_overlay_area));
 }
 
 static void on_color_changed (GObject *object, GParamSpec *pspec, MemeWindow *self) {
@@ -780,6 +801,7 @@ static void meme_window_class_init (MemeWindowClass *klass) {
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, templates_group);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, transform_group);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, meme_preview);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, crop_overlay_area);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, content_stack);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, split_view);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, add_text_button);
@@ -916,6 +938,9 @@ static void meme_window_init (MemeWindow *self) {
     g_signal_connect_swapped (self->blend_mode_row, "notify::selected", G_CALLBACK (on_layer_control_changed), self);
     g_signal_connect_swapped (self->delete_layer_button, "clicked", G_CALLBACK (on_delete_layer_clicked), self);
     
+    gtk_drawing_area_set_draw_func (self->crop_overlay_area, draw_crop_overlay, self, NULL);
+    gtk_widget_set_can_target (GTK_WIDGET (self->crop_overlay_area), FALSE);
+
     // Handlers moved to meme-canvas.c
     self->drag_gesture = GTK_GESTURE_DRAG (gtk_gesture_drag_new ());
     gtk_widget_add_controller (GTK_WIDGET (self->meme_preview), GTK_EVENT_CONTROLLER (self->drag_gesture));

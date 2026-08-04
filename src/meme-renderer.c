@@ -310,6 +310,123 @@ GdkPixbuf *meme_render_composite(GdkPixbuf *bg, GList *layers,
     return comp;
 }
 
+void meme_draw_crop_chrome (cairo_t *cr, double w, double h,
+                             double abs_x, double abs_y, double abs_w, double abs_h) {
+    double scale_ref = (w < h ? w : h) / 800.0;
+    double corner_len = CLAMP(18.0 * scale_ref, 12.0, 26.0);
+    double edge_len = CLAMP(14.0 * scale_ref, 10.0, 20.0);
+    double handle_thick = 3.0;
+    int i;
+
+    cairo_set_source_rgba(cr, 0, 0, 0, 0.55);
+    if (abs_y > 0) {
+        cairo_rectangle(cr, 0, 0, w, abs_y);
+        cairo_fill(cr);
+    }
+    if (abs_y + abs_h < h) {
+        cairo_rectangle(cr, 0, abs_y + abs_h, w, h - (abs_y + abs_h));
+        cairo_fill(cr);
+    }
+    if (abs_x > 0) {
+        cairo_rectangle(cr, 0, abs_y, abs_x, abs_h);
+        cairo_fill(cr);
+    }
+    if (abs_x + abs_w < w) {
+        cairo_rectangle(cr, abs_x + abs_w, abs_y, w - (abs_x + abs_w), abs_h);
+        cairo_fill(cr);
+    }
+
+    cairo_set_line_width(cr, 1.0);
+    cairo_set_source_rgba(cr, 1, 1, 1, 0.35);
+    for (i = 1; i <= 2; i++) {
+        double gx = abs_x + abs_w * i / 3.0;
+        double gy = abs_y + abs_h * i / 3.0;
+        cairo_move_to(cr, gx, abs_y);
+        cairo_line_to(cr, gx, abs_y + abs_h);
+        cairo_move_to(cr, abs_x, gy);
+        cairo_line_to(cr, abs_x + abs_w, gy);
+    }
+    cairo_stroke(cr);
+
+
+    cairo_set_line_width(cr, 3.0);
+    cairo_set_source_rgba(cr, 0, 0, 0, 0.45);
+    cairo_rectangle(cr, abs_x, abs_y, abs_w, abs_h);
+    cairo_stroke(cr);
+
+    cairo_set_line_width(cr, 1.5);
+    cairo_set_source_rgba(cr, 1, 1, 1, 0.95);
+    cairo_rectangle(cr, abs_x, abs_y, abs_w, abs_h);
+    cairo_stroke(cr);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+
+    {
+        struct { double x, y, dx, dy; } corners[4] = {
+            { abs_x, abs_y, 1, 1 },
+            { abs_x + abs_w, abs_y, -1, 1 },
+            { abs_x, abs_y + abs_h, 1, -1 },
+            { abs_x + abs_w, abs_y + abs_h, -1, -1 },
+        };
+        int c;
+        for (c = 0; c < 4; c++) {
+            double x = corners[c].x, y = corners[c].y;
+            double dx = corners[c].dx, dy = corners[c].dy;
+
+            cairo_set_line_width(cr, handle_thick + 2.0);
+            cairo_set_source_rgba(cr, 0, 0, 0, 0.4);
+            cairo_move_to(cr, x + dx * corner_len, y);
+            cairo_line_to(cr, x, y);
+            cairo_line_to(cr, x, y + dy * corner_len);
+            cairo_stroke(cr);
+
+            cairo_set_line_width(cr, handle_thick);
+            cairo_set_source_rgba(cr, 1, 1, 1, 1);
+            cairo_move_to(cr, x + dx * corner_len, y);
+            cairo_line_to(cr, x, y);
+            cairo_line_to(cr, x, y + dy * corner_len);
+            cairo_stroke(cr);
+        }
+    }
+
+    {
+        struct { double x, y, horiz; } edges[4] = {
+            { abs_x + abs_w / 2.0, abs_y, 1 },
+            { abs_x + abs_w / 2.0, abs_y + abs_h, 1 },
+            { abs_x, abs_y + abs_h / 2.0, 0 },
+            { abs_x + abs_w, abs_y + abs_h / 2.0, 0 },
+        };
+        int e;
+        for (e = 0; e < 4; e++) {
+            double x = edges[e].x, y = edges[e].y;
+            double half = edge_len / 2.0;
+
+            cairo_set_line_width(cr, handle_thick + 2.0);
+            cairo_set_source_rgba(cr, 0, 0, 0, 0.4);
+            if (edges[e].horiz) {
+                cairo_move_to(cr, x - half, y);
+                cairo_line_to(cr, x + half, y);
+            } else {
+                cairo_move_to(cr, x, y - half);
+                cairo_line_to(cr, x, y + half);
+            }
+            cairo_stroke(cr);
+
+            cairo_set_line_width(cr, handle_thick);
+            cairo_set_source_rgba(cr, 1, 1, 1, 1);
+            if (edges[e].horiz) {
+                cairo_move_to(cr, x - half, y);
+                cairo_line_to(cr, x + half, y);
+            } else {
+                cairo_move_to(cr, x, y - half);
+                cairo_line_to(cr, x, y + half);
+            }
+            cairo_stroke(cr);
+        }
+    }
+
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+}
+
 GdkTexture *meme_render_editor_overlay(GdkPixbuf *composite, GList *layers, ImageLayer *selected, gboolean crop_active, double cx, double cy, double cw, double ch) {
     GdkPixbuf *res;
     GdkTexture *tex;
@@ -330,123 +447,7 @@ GdkTexture *meme_render_editor_overlay(GdkPixbuf *composite, GList *layers, Imag
     cairo_paint(cr);
 
     if (crop_active) {
-        double abs_x = cx * w;
-        double abs_y = cy * h;
-        double abs_w = cw * w;
-        double abs_h = ch * h;
-        double scale_ref = (w < h ? w : h) / 800.0;
-        double corner_len = CLAMP(18.0 * scale_ref, 12.0, 26.0);
-        double edge_len = CLAMP(14.0 * scale_ref, 10.0, 20.0);
-        double handle_thick = 3.0;
-        int i;
-
-        cairo_set_source_rgba(cr, 0, 0, 0, 0.55);
-        if (abs_y > 0) {
-            cairo_rectangle(cr, 0, 0, w, abs_y);
-            cairo_fill(cr);
-        }
-        if (abs_y + abs_h < h) {
-            cairo_rectangle(cr, 0, abs_y + abs_h, w, h - (abs_y + abs_h));
-            cairo_fill(cr);
-        }
-        if (abs_x > 0) {
-            cairo_rectangle(cr, 0, abs_y, abs_x, abs_h);
-            cairo_fill(cr);
-        }
-        if (abs_x + abs_w < w) {
-            cairo_rectangle(cr, abs_x + abs_w, abs_y, w - (abs_x + abs_w), abs_h);
-            cairo_fill(cr);
-        }
-
-        cairo_set_line_width(cr, 1.0);
-        cairo_set_source_rgba(cr, 1, 1, 1, 0.35);
-        for (i = 1; i <= 2; i++) {
-            double gx = abs_x + abs_w * i / 3.0;
-            double gy = abs_y + abs_h * i / 3.0;
-            cairo_move_to(cr, gx, abs_y);
-            cairo_line_to(cr, gx, abs_y + abs_h);
-            cairo_move_to(cr, abs_x, gy);
-            cairo_line_to(cr, abs_x + abs_w, gy);
-        }
-        cairo_stroke(cr);
-
-
-        cairo_set_line_width(cr, 3.0);
-        cairo_set_source_rgba(cr, 0, 0, 0, 0.45);
-        cairo_rectangle(cr, abs_x, abs_y, abs_w, abs_h);
-        cairo_stroke(cr);
-
-        cairo_set_line_width(cr, 1.5);
-        cairo_set_source_rgba(cr, 1, 1, 1, 0.95);
-        cairo_rectangle(cr, abs_x, abs_y, abs_w, abs_h);
-        cairo_stroke(cr);
-        cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-
-        {
-            struct { double x, y, dx, dy; } corners[4] = {
-                { abs_x, abs_y, 1, 1 },
-                { abs_x + abs_w, abs_y, -1, 1 },
-                { abs_x, abs_y + abs_h, 1, -1 },
-                { abs_x + abs_w, abs_y + abs_h, -1, -1 },
-            };
-            int c;
-            for (c = 0; c < 4; c++) {
-                double x = corners[c].x, y = corners[c].y;
-                double dx = corners[c].dx, dy = corners[c].dy;
-
-                cairo_set_line_width(cr, handle_thick + 2.0);
-                cairo_set_source_rgba(cr, 0, 0, 0, 0.4);
-                cairo_move_to(cr, x + dx * corner_len, y);
-                cairo_line_to(cr, x, y);
-                cairo_line_to(cr, x, y + dy * corner_len);
-                cairo_stroke(cr);
-
-                cairo_set_line_width(cr, handle_thick);
-                cairo_set_source_rgba(cr, 1, 1, 1, 1);
-                cairo_move_to(cr, x + dx * corner_len, y);
-                cairo_line_to(cr, x, y);
-                cairo_line_to(cr, x, y + dy * corner_len);
-                cairo_stroke(cr);
-            }
-        }
-
-        {
-            struct { double x, y, horiz; } edges[4] = {
-                { abs_x + abs_w / 2.0, abs_y, 1 },
-                { abs_x + abs_w / 2.0, abs_y + abs_h, 1 },
-                { abs_x, abs_y + abs_h / 2.0, 0 },
-                { abs_x + abs_w, abs_y + abs_h / 2.0, 0 },
-            };
-            int e;
-            for (e = 0; e < 4; e++) {
-                double x = edges[e].x, y = edges[e].y;
-                double half = edge_len / 2.0;
-
-                cairo_set_line_width(cr, handle_thick + 2.0);
-                cairo_set_source_rgba(cr, 0, 0, 0, 0.4);
-                if (edges[e].horiz) {
-                    cairo_move_to(cr, x - half, y);
-                    cairo_line_to(cr, x + half, y);
-                } else {
-                    cairo_move_to(cr, x, y - half);
-                    cairo_line_to(cr, x, y + half);
-                }
-                cairo_stroke(cr);
-
-                cairo_set_line_width(cr, handle_thick);
-                cairo_set_source_rgba(cr, 1, 1, 1, 1);
-                if (edges[e].horiz) {
-                    cairo_move_to(cr, x - half, y);
-                    cairo_line_to(cr, x + half, y);
-                } else {
-                    cairo_move_to(cr, x, y - half);
-                    cairo_line_to(cr, x, y + half);
-                }
-                cairo_stroke(cr);
-            }
-        }
-
-        cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+        meme_draw_crop_chrome(cr, w, h, cx * w, cy * h, cw * w, ch * h);
     } else if (selected) {
         double sx = selected->x * w;
         double sy = selected->y * h;

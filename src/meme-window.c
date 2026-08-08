@@ -32,6 +32,7 @@
 G_DEFINE_FINAL_TYPE (MemeWindow, meme_window, ADW_TYPE_APPLICATION_WINDOW)
 
 static void populate_template_gallery (MemeWindow *self);
+static void set_template_select_mode (MemeWindow *self, gboolean active);
 
 static void draw_crop_overlay (GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
     MemeWindow *self = MEME_WINDOW (user_data);
@@ -236,6 +237,8 @@ static void on_exit_text_editing_clicked (MemeWindow *self) {
 
 static void on_open_template_window_clicked (MemeWindow *self) {
     //its just like seeing her, for the first time again.
+    if (self->template_select_mode)
+        set_template_select_mode (self, FALSE);
     adw_dialog_present (self->template_window, GTK_WIDGET (self));
 }
 
@@ -595,19 +598,17 @@ static void on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, M
     GtkWidget *image;
     const char *template_path;
     GError *error = NULL;
+
+    if (self->template_select_mode) return;
+
     on_clear_clicked(self);
 
-    if (!child) { 
-        gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), FALSE); 
-        return; 
-    }
+    if (!child) return;
   
     image = gtk_flow_box_child_get_child (child);
     template_path = g_object_get_data (G_OBJECT (image), "template-path");
     if (!template_path) return;
 
-    gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), is_user_template (template_path));
-  
     g_clear_object (&self->template_image);
     if (self->layers) { meme_layer_list_free (self->layers); self->layers = NULL; }
     free_history_stack (&self->undo_stack); free_history_stack (&self->redo_stack);
@@ -693,24 +694,108 @@ static void on_delete_confirm_response (GObject *s, GAsyncResult *r, gpointer d)
     const char *choice = adw_alert_dialog_choose_finish(dialog, r);
     if (g_strcmp0(choice, "delete") == 0) {
         GList *selected = gtk_flow_box_get_selected_children (self->template_gallery);
-        if (selected) {
-            GtkFlowBoxChild *child = selected->data;
+        GList *l;
+
+        for (l = selected; l != NULL; l = l->next) {
+            GtkFlowBoxChild *child = l->data;
             GtkWidget *image = gtk_flow_box_child_get_child (child);
             const char *path = g_object_get_data (G_OBJECT (image), "template-path");
-            if (g_unlink (path) == 0) {
+
+            // Built-in templates live in resources, not on disk - skip those.
+            if (path && is_user_template (path) && g_unlink (path) == 0) {
                 gtk_flow_box_remove (self->template_gallery, GTK_WIDGET (child));
-                on_clear_clicked (self);
             }
-            g_list_free (selected);
         }
+        g_list_free (selected);
+
+        gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), FALSE);
+        gtk_button_set_label (self->select_all_button, "Select All");
     }
 }
 
 static void on_delete_template_clicked (MemeWindow *self) {
-    AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new("Delete this template?", NULL));
+    GList *selected = gtk_flow_box_get_selected_children (self->template_gallery);
+    guint count = g_list_length (selected);
+    char *message;
+    AdwAlertDialog *dialog;
+
+    g_list_free (selected);
+    if (count == 0) return;
+
+    message = g_strdup_printf ("Delete %u selected template%s?", count, count == 1 ? "" : "s");
+    dialog = ADW_ALERT_DIALOG (adw_alert_dialog_new (message, NULL));
+    g_free (message);
+
     adw_alert_dialog_add_responses(dialog, "cancel", "Cancel", "delete", "Delete", NULL);
     adw_alert_dialog_set_response_appearance(dialog, "delete", ADW_RESPONSE_DESTRUCTIVE);
     adw_alert_dialog_choose(dialog, GTK_WIDGET (self->template_window), NULL, on_delete_confirm_response, self);
+}
+
+static guint count_flowbox_children (GtkFlowBox *flowbox) {
+    guint total = 0;
+    GtkWidget *child;
+
+    for (child = gtk_widget_get_first_child (GTK_WIDGET (flowbox));
+         child != NULL;
+         child = gtk_widget_get_next_sibling (child)) {
+        total++;
+    }
+    return total;
+}
+
+static void on_template_selection_changed (GtkFlowBox *flowbox, MemeWindow *self) {
+    GList *selected;
+    guint selected_count, total;
+
+    if (!self->template_select_mode) return;
+
+    selected = gtk_flow_box_get_selected_children (flowbox);
+    selected_count = g_list_length (selected);
+    g_list_free (selected);
+
+    total = count_flowbox_children (flowbox);
+
+    gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), selected_count > 0);
+    //gtk_button_set_label (self->select_all_button, (total > 0 && selected_count >= total) ? "Deselect All" : "Select All");
+}
+
+static void on_select_all_clicked (MemeWindow *self) {
+    guint total = count_flowbox_children (self->template_gallery);
+    GList *selected = gtk_flow_box_get_selected_children (self->template_gallery);
+    guint selected_count = g_list_length (selected);
+    g_list_free (selected);
+
+    if (total > 0 && selected_count >= total) {
+        gtk_flow_box_unselect_all (self->template_gallery);
+    } else {
+        gtk_flow_box_select_all (self->template_gallery);
+    }
+}
+
+static void set_template_select_mode (MemeWindow *self, gboolean active) {
+    self->template_select_mode = active;
+
+    gtk_flow_box_unselect_all (self->template_gallery);
+    gtk_flow_box_set_selection_mode (self->template_gallery,
+                                      active ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_SINGLE);
+
+    gtk_widget_set_visible (GTK_WIDGET (self->import_template_button), !active);
+    gtk_widget_set_visible (GTK_WIDGET (self->select_all_button), active);
+    gtk_widget_set_visible (GTK_WIDGET (self->delete_template_button), active);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), FALSE);
+    //gtk_button_set_label (self->select_all_button, "Select All");
+
+    if (active) {
+        gtk_button_set_label (self->select_mode_button, "Cancel");
+        gtk_widget_set_tooltip_text (GTK_WIDGET (self->select_mode_button), "Cancel");
+    } else {
+        gtk_button_set_icon_name (self->select_mode_button, "selection-mode-symbolic");
+        gtk_widget_set_tooltip_text (GTK_WIDGET (self->select_mode_button), "Manage Templates");
+    }
+}
+
+static void on_select_mode_clicked (MemeWindow *self) {
+    set_template_select_mode (self, !self->template_select_mode);
 }
 
 void apply_zoom(MemeWindow *self) {
@@ -932,12 +1017,17 @@ static void meme_window_init (MemeWindow *self) {
         self->template_gallery = GTK_FLOW_BOX (gtk_builder_get_object (template_builder, "template_gallery"));
         self->import_template_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "import_template_button"));
         self->delete_template_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "delete_template_button"));
+        self->select_mode_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "select_mode_button"));
+        self->select_all_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "select_all_button"));
         g_object_unref (template_builder);
     }
 
     g_signal_connect_swapped (self->import_template_button, "clicked", G_CALLBACK (on_import_template_clicked), self);
     g_signal_connect_swapped (self->delete_template_button, "clicked", G_CALLBACK (on_delete_template_clicked), self);
+    g_signal_connect_swapped (self->select_all_button, "clicked", G_CALLBACK (on_select_all_clicked), self);
+    g_signal_connect_swapped (self->select_mode_button, "clicked", G_CALLBACK (on_select_mode_clicked), self);
     g_signal_connect (self->template_gallery, "child-activated", G_CALLBACK (on_template_selected), self);
+    g_signal_connect (self->template_gallery, "selected-children-changed", G_CALLBACK (on_template_selection_changed), self);
     
     g_signal_connect (self->deep_fry_button, "toggled", G_CALLBACK (on_deep_fry_toggled), self);
     g_signal_connect_swapped (self->cinematic_button, "toggled", G_CALLBACK (on_text_changed), self);

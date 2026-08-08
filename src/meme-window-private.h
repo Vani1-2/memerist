@@ -25,6 +25,9 @@ struct _MemeWindow {
     GtkButton *export_button, *copy_clipboard_button, *zoom_in, *zoom_out;
     GtkButton *load_image_button, *pill_btn_open_image, *clear_button, *add_image_button;
     GtkButton *import_template_button, *delete_template_button;
+    GtkButton *select_all_button;
+    GtkButton *select_mode_button;
+    gboolean template_select_mode;
     GtkToggleButton *deep_fry_button, *cinematic_button, *crop_mode_button, *bw_button;
     GtkFlowBox *template_gallery;
     AdwDialog *template_window;

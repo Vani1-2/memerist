@@ -15,11 +15,24 @@ Adw.Dialog template_window {
         tooltip-text: _("Import Template");
       }
 
+      [start]
+      Button select_all_button {
+        label: _("Select All");
+        visible: false;
+      }
+
+      [end]
+      Button select_mode_button {
+        icon-name: "selection-mode-symbolic";
+        tooltip-text: _("Manage Templates");
+      }
+
       [end]
       Button delete_template_button {
         icon-name: "user-trash-symbolic";
-        tooltip-text: _("Remove Imported Template");
+        tooltip-text: _("Delete Selected Templates");
         sensitive: false;
+        visible: false;
 
         styles [
           "destructive-action",

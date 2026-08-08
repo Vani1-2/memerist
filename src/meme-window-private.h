@@ -30,7 +30,9 @@ struct _MemeWindow {
     gboolean template_select_mode;
     GtkToggleButton *deep_fry_button, *cinematic_button, *crop_mode_button, *bw_button;
     GtkFlowBox *template_gallery;
+    GtkStack *template_content_stack;
     AdwDialog *template_window;
+    GSettings *template_settings;
     GtkMenuButton *global_filters_button;
     GtkScale *layer_opacity_scale, *layer_rotation_scale;
     AdwComboRow *blend_mode_row;

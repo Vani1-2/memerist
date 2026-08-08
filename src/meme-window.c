@@ -33,6 +33,8 @@ G_DEFINE_FINAL_TYPE (MemeWindow, meme_window, ADW_TYPE_APPLICATION_WINDOW)
 
 static void populate_template_gallery (MemeWindow *self);
 static void set_template_select_mode (MemeWindow *self, gboolean active);
+static void update_template_gallery_empty_state (MemeWindow *self);
+static guint count_flowbox_children (GtkFlowBox *flowbox);
 
 static void draw_crop_overlay (GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
     MemeWindow *self = MEME_WINDOW (user_data);
@@ -463,6 +465,7 @@ static void myapp_window_finalize (GObject *object) {
     g_clear_object (&self->final_meme);
     g_clear_object (&self->crop_session_template_snapshot);
     g_clear_object (&self->template_window);
+    g_clear_object (&self->template_settings);
     g_free (self->template_gif_path);
     if (self->layers) meme_layer_list_free (self->layers);
     free_history_stack (&self->undo_stack);
@@ -525,6 +528,7 @@ static void on_templates_enumerated (GObject *source_object, GAsyncResult *res, 
     // if no more files, we are done
     if (!files) {
         g_object_unref (enumerator);
+        update_template_gallery_empty_state (self);
         return;
     }
 
@@ -569,6 +573,36 @@ static void scan_directory_for_templates_async (MemeWindow *self, const char *di
     g_object_unref (dir);
 }
 
+static gboolean is_template_hidden (MemeWindow *self, const char *path) {
+    gchar **hidden = g_settings_get_strv (self->template_settings, "hidden-templates");
+    gboolean found = FALSE;
+
+    for (int i = 0; hidden[i] != NULL; i++) {
+        if (g_strcmp0 (hidden[i], path) == 0) { found = TRUE; break; }
+    }
+    g_strfreev (hidden);
+    return found;
+}
+
+static void hide_template (MemeWindow *self, const char *path) {
+    gchar **hidden = g_settings_get_strv (self->template_settings, "hidden-templates");
+    GPtrArray *updated = g_ptr_array_new ();
+    gboolean already_hidden = FALSE;
+
+    for (int i = 0; hidden[i] != NULL; i++) {
+        g_ptr_array_add (updated, hidden[i]);
+        if (g_strcmp0 (hidden[i], path) == 0) already_hidden = TRUE;
+    }
+    if (!already_hidden) g_ptr_array_add (updated, (gpointer) path);
+    g_ptr_array_add (updated, NULL);
+
+    g_settings_set_strv (self->template_settings, "hidden-templates",
+                          (const gchar * const *) updated->pdata);
+
+    g_ptr_array_free (updated, TRUE);
+    g_strfreev (hidden);
+}
+
 static void scan_resources_for_templates (MemeWindow *self) {
     GError *error = NULL;
     const char *res_path = "/io/github/vani_tty1/memerist/templates";
@@ -577,7 +611,8 @@ static void scan_resources_for_templates (MemeWindow *self) {
     if (files) {
         for (int i = 0; files[i] != NULL; i++) {
             char *full_uri = g_strdup_printf ("resource://%s/%s", res_path, files[i]);
-            add_file_to_gallery (self, full_uri);
+            if (!is_template_hidden (self, full_uri))
+                add_file_to_gallery (self, full_uri);
             g_free (full_uri);
         }
         g_strfreev (files);
@@ -592,6 +627,7 @@ static void populate_template_gallery (MemeWindow *self) {
     g_mkdir_with_parents (user_dir, 0755);
     scan_directory_for_templates_async (self, user_dir); 
     g_free (user_dir);
+    update_template_gallery_empty_state (self);
 }
 
 static void on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, MemeWindow *self) {
@@ -649,6 +685,7 @@ static void on_copy_import_finished(GObject *source_object, GAsyncResult *res, g
     
     if(g_file_copy_finish(source_file, res, &error)){
         add_file_to_gallery(self, dest_path);
+        update_template_gallery_empty_state (self);
     }else{
         g_printerr("Error copying file: %s\n", error->message);
         g_clear_error(&error);
@@ -701,8 +738,13 @@ static void on_delete_confirm_response (GObject *s, GAsyncResult *r, gpointer d)
             GtkWidget *image = gtk_flow_box_child_get_child (child);
             const char *path = g_object_get_data (G_OBJECT (image), "template-path");
 
-            // Built-in templates live in resources, not on disk - skip those.
-            if (path && is_user_template (path) && g_unlink (path) == 0) {
+            if (!path) continue;
+
+            if (is_user_template (path)) {
+                if (g_unlink (path) == 0)
+                    gtk_flow_box_remove (self->template_gallery, GTK_WIDGET (child));
+            } else {
+                hide_template (self, path);
                 gtk_flow_box_remove (self->template_gallery, GTK_WIDGET (child));
             }
         }
@@ -710,6 +752,7 @@ static void on_delete_confirm_response (GObject *s, GAsyncResult *r, gpointer d)
 
         gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), FALSE);
         gtk_button_set_label (self->select_all_button, "Select All");
+        update_template_gallery_empty_state (self);
     }
 }
 
@@ -743,6 +786,12 @@ static guint count_flowbox_children (GtkFlowBox *flowbox) {
     return total;
 }
 
+static void update_template_gallery_empty_state (MemeWindow *self) {
+    gboolean has_templates = count_flowbox_children (self->template_gallery) > 0;
+    gtk_stack_set_visible_child_name (self->template_content_stack,
+                                       has_templates ? "gallery" : "empty");
+}
+
 static void on_template_selection_changed (GtkFlowBox *flowbox, MemeWindow *self) {
     GList *selected;
     guint selected_count, total;
@@ -756,7 +805,7 @@ static void on_template_selection_changed (GtkFlowBox *flowbox, MemeWindow *self
     total = count_flowbox_children (flowbox);
 
     gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), selected_count > 0);
-    //gtk_button_set_label (self->select_all_button, (total > 0 && selected_count >= total) ? "Deselect All" : "Select All");
+    gtk_button_set_label (self->select_all_button, (total > 0 && selected_count >= total) ? "Deselect All" : "Select All");
 }
 
 static void on_select_all_clicked (MemeWindow *self) {
@@ -1019,8 +1068,11 @@ static void meme_window_init (MemeWindow *self) {
         self->delete_template_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "delete_template_button"));
         self->select_mode_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "select_mode_button"));
         self->select_all_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "select_all_button"));
+        self->template_content_stack = GTK_STACK (gtk_builder_get_object (template_builder, "template_content_stack"));
         g_object_unref (template_builder);
     }
+
+    self->template_settings = g_settings_new ("io.github.vani_tty1.memerist");
 
     g_signal_connect_swapped (self->import_template_button, "clicked", G_CALLBACK (on_import_template_clicked), self);
     g_signal_connect_swapped (self->delete_template_button, "clicked", G_CALLBACK (on_delete_template_clicked), self);

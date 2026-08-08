@@ -30,5 +30,11 @@
 			<summary>Color scheme preference</summary>
 			<description>Preferred color scheme: 'light', 'dark', or 'default'</description>
 		</key>
+
+		<key name="hidden-templates" type="as">
+			<default>[]</default>
+			<summary>Hidden built-in templates</summary>
+			<description>Resource paths of built-in templates the user has deleted</description>
+		</key>
 	</schema>
 </schemalist>

@@ -40,22 +40,39 @@ Adw.Dialog template_window {
       }
     }
 
-    content: ScrolledWindow {
+    content: Stack template_content_stack {
       hexpand: true;
       vexpand: true;
-      hscrollbar-policy: never;
 
-      FlowBox template_gallery {
-        selection-mode: single;
-        max-children-per-line: 3;
-        min-children-per-line: 2;
-        row-spacing: 12;
-        column-spacing: 12;
-        homogeneous: true;
-        margin-top: 12;
-        margin-bottom: 12;
-        margin-start: 12;
-        margin-end: 12;
+      StackPage {
+        name: "gallery";
+        child: ScrolledWindow {
+          hexpand: true;
+          vexpand: true;
+          hscrollbar-policy: never;
+
+          FlowBox template_gallery {
+            selection-mode: single;
+            max-children-per-line: 3;
+            min-children-per-line: 2;
+            row-spacing: 12;
+            column-spacing: 12;
+            homogeneous: true;
+            margin-top: 12;
+            margin-bottom: 12;
+            margin-start: 12;
+            margin-end: 12;
+          }
+        };
+      }
+
+      StackPage {
+        name: "empty";
+        child: Adw.StatusPage {
+          icon-name: "folder-symbolic";
+          title: _("No Templates");
+          description: _("There is nothing here bozo");
+        };
       }
     };
   };

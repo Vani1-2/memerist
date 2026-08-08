@@ -15,7 +15,7 @@
     <img width='200' alt='Get it on Flathub' src='https://flathub.org/api/badge?locale=en'/>
 </a>
 
-<br>
+### Other Packaging Formats
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/memerist.svg)](https://repology.org/project/memerist/versions)
 
@@ -67,7 +67,6 @@ cd memerist
 # Compile and run:
 make run
 
-
 # View more options:
 make help
 ```
@@ -85,4 +84,9 @@ This project is open source. See the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-Built with [GTK4](https://gtk.org/) and [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/).
+- [GTK4](https://gtk.org/) 
+- [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/).
+- [GNOME Builder](https://developer.gnome.org/documentation/introduction/builder.html)
+- [Flatpak](https://flatpak.org/)
+- [Flathub](https://docs.flathub.org/)
+- [Blueprint](https://gnome.pages.gitlab.gnome.org/blueprint-compiler/)

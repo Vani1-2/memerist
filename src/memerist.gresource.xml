@@ -4,6 +4,7 @@
     <file preprocess="xml-stripblanks">meme-window.ui</file>
     <file preprocess="xml-stripblanks">shortcuts-dialog.ui</file>
     <file preprocess="xml-stripblanks">theme-switcher.ui</file>
+    <file preprocess="xml-stripblanks">template-window.ui</file>
     <file>io.github.vani_tty1.memerist.metainfo.xml</file>
     <file>style.css</file>
     <file>templates/template1.jpeg</file>

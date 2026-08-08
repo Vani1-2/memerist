@@ -234,15 +234,15 @@ static void on_exit_text_editing_clicked (MemeWindow *self) {
     render_meme (self);
 }
 
-static void on_select_template_clicked (MemeWindow *self) {
-    adw_overlay_split_view_set_show_sidebar (self->split_view, TRUE);
+static void on_open_template_window_clicked (MemeWindow *self) {
+    //its just like seeing her, for the first time again.
+    adw_dialog_present (self->template_window, GTK_WIDGET (self));
 }
 
 static void on_crop_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
     gboolean active = gtk_toggle_button_get_active (btn);
     gtk_widget_set_visible (GTK_WIDGET (self->transform_group), active);
     gtk_widget_set_visible (GTK_WIDGET (self->layer_group), !active);
-    gtk_widget_set_visible (GTK_WIDGET (self->templates_group), !active);
     gtk_widget_set_visible (GTK_WIDGET (self->layer_group), !active && self->selected_layer != NULL);
     if (active) {
     self->crop_x = 0.0; self->crop_y = 0.0;
@@ -459,6 +459,7 @@ static void myapp_window_finalize (GObject *object) {
     g_clear_object (&self->template_image);
     g_clear_object (&self->final_meme);
     g_clear_object (&self->crop_session_template_snapshot);
+    g_clear_object (&self->template_window);
     g_free (self->template_gif_path);
     if (self->layers) meme_layer_list_free (self->layers);
     free_history_stack (&self->undo_stack);
@@ -635,6 +636,7 @@ static void on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, M
         self->zoom_level = 1.0;
         apply_zoom(self);
         render_meme (self);
+        adw_dialog_close (self->template_window);
     }
 }
 
@@ -708,7 +710,7 @@ static void on_delete_template_clicked (MemeWindow *self) {
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new("Delete this template?", NULL));
     adw_alert_dialog_add_responses(dialog, "cancel", "Cancel", "delete", "Delete", NULL);
     adw_alert_dialog_set_response_appearance(dialog, "delete", ADW_RESPONSE_DESTRUCTIVE);
-    adw_alert_dialog_choose(dialog, GTK_WIDGET(self), NULL, on_delete_confirm_response, self);
+    adw_alert_dialog_choose(dialog, GTK_WIDGET (self->template_window), NULL, on_delete_confirm_response, self);
 }
 
 void apply_zoom(MemeWindow *self) {
@@ -798,7 +800,7 @@ static void meme_window_class_init (MemeWindowClass *klass) {
     gtk_widget_class_set_template_from_resource (widget_class, "/io/github/vani_tty1/memerist/meme-window.ui");
     gtk_widget_class_bind_template_child(widget_class, MemeWindow, export_loading_screen);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, layer_group);
-    gtk_widget_class_bind_template_child (widget_class, MemeWindow, templates_group);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, open_template_row);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, transform_group);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, meme_preview);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, crop_overlay_area);
@@ -816,11 +818,8 @@ static void meme_window_class_init (MemeWindowClass *klass) {
     gtk_widget_class_bind_template_child(widget_class, MemeWindow, pill_btn_open_image);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, clear_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, add_image_button);
-    gtk_widget_class_bind_template_child (widget_class, MemeWindow, import_template_button);
-    gtk_widget_class_bind_template_child (widget_class, MemeWindow, delete_template_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, global_filters_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, deep_fry_button);
-    gtk_widget_class_bind_template_child (widget_class, MemeWindow, template_gallery);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, cinematic_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, bw_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, layer_opacity_scale);
@@ -837,7 +836,7 @@ static void meme_window_class_init (MemeWindowClass *klass) {
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, crop_169_button);
     gtk_widget_class_bind_template_callback (widget_class, on_apply_crop_clicked);
     gtk_widget_class_bind_template_callback (widget_class, on_cancel_crop_clicked);
-    gtk_widget_class_bind_template_callback (widget_class, on_select_template_clicked);
+    gtk_widget_class_bind_template_callback (widget_class, on_open_template_window_clicked);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, save_project_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, load_project_button);
     gtk_widget_class_bind_template_child(widget_class, MemeWindow, main_menu_button);
@@ -926,6 +925,16 @@ static void meme_window_init (MemeWindow *self) {
     g_signal_connect_swapped (self->load_project_button, "clicked", G_CALLBACK (on_load_project_clicked), self);
     g_signal_connect_swapped(self->copy_clipboard_button, "clicked", G_CALLBACK(on_copy_clipboard_clicked), self);
     
+    {
+        GtkBuilder *template_builder = gtk_builder_new_from_resource ("/io/github/vani_tty1/memerist/template-window.ui");
+        self->template_window = ADW_DIALOG (gtk_builder_get_object (template_builder, "template_window"));
+        g_object_ref_sink (self->template_window);
+        self->template_gallery = GTK_FLOW_BOX (gtk_builder_get_object (template_builder, "template_gallery"));
+        self->import_template_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "import_template_button"));
+        self->delete_template_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "delete_template_button"));
+        g_object_unref (template_builder);
+    }
+
     g_signal_connect_swapped (self->import_template_button, "clicked", G_CALLBACK (on_import_template_clicked), self);
     g_signal_connect_swapped (self->delete_template_button, "clicked", G_CALLBACK (on_delete_template_clicked), self);
     g_signal_connect (self->template_gallery, "child-activated", G_CALLBACK (on_template_selected), self);

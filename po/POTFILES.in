@@ -8,3 +8,4 @@ src/meme-window.c
 src/meme-window.ui
 src/primary-menu.ui
 src/shortcuts-dialog.ui
+src/template-window.ui

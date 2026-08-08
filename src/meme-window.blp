@@ -521,7 +521,7 @@ template $MemeWindow: Adw.ApplicationWindow {
                               "pill",
                             ]
 
-                            clicked => $on_select_template_clicked() swapped;
+                            clicked => $on_open_template_window_clicked() swapped;
                           }
                         }
                       };
@@ -857,48 +857,21 @@ template $MemeWindow: Adw.ApplicationWindow {
               }
             }
 
-            Adw.PreferencesGroup templates_group {
+            Adw.PreferencesGroup {
               title: _("Templates");
+              Adw.ActionRow open_template_row {
+                subtitle: _("Browse and choose a template image");
+                activatable: true;
+                activated => $on_open_template_window_clicked() swapped;
 
-              Adw.ExpanderRow {
-                title: _("Gallery");
-                expanded: true;
-
-                [suffix]
-                Button import_template_button {
-                  icon-name: "list-add-symbolic";
-                  tooltip-text: _("Import Template");
-
-                  styles [
-                    "flat",
-                  ]
+                [prefix]
+                Image {
+                  icon-name: "image-x-generic-symbolic";
                 }
 
                 [suffix]
-                Button delete_template_button {
-                  icon-name: "user-trash-symbolic";
-                  tooltip-text: _("Remove Imported Template");
-                  sensitive: false;
-
-                  styles [
-                    "destructive-action",
-                  ]
-                }
-
-                Box template_gallery_box {
-                  height-request: 450;
-
-                  ScrolledWindow {
-                    hexpand: true;
-                    vexpand: true;
-                    hscrollbar-policy: always;
-                    vscrollbar-policy: always;
-
-                    FlowBox template_gallery {
-                      selection-mode: single;
-                      max-children-per-line: 2;
-                    }
-                  }
+                Image {
+                  icon-name: "go-next-symbolic";
                 }
               }
             }

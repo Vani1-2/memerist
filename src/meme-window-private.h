@@ -7,7 +7,7 @@
 struct _MemeWindow {
     AdwApplicationWindow parent_instance;
     AdwPreferencesGroup *layer_group;
-    AdwPreferencesGroup *templates_group;
+    AdwActionRow *open_template_row;
     AdwPreferencesGroup *transform_group;
     AdwOverlaySplitView *split_view;
     AdwToastOverlay *copy_clip_feedback;
@@ -27,6 +27,7 @@ struct _MemeWindow {
     GtkButton *import_template_button, *delete_template_button;
     GtkToggleButton *deep_fry_button, *cinematic_button, *crop_mode_button, *bw_button;
     GtkFlowBox *template_gallery;
+    AdwDialog *template_window;
     GtkMenuButton *global_filters_button;
     GtkScale *layer_opacity_scale, *layer_rotation_scale;
     AdwComboRow *blend_mode_row;

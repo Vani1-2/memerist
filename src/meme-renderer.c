@@ -313,9 +313,9 @@ GdkPixbuf *meme_render_composite(GdkPixbuf *bg, GList *layers,
 void meme_draw_crop_chrome (cairo_t *cr, double w, double h,
                              double abs_x, double abs_y, double abs_w, double abs_h) {
     double scale_ref = (w < h ? w : h) / 800.0;
-    double corner_len = CLAMP(18.0 * scale_ref, 12.0, 26.0);
-    double edge_len = CLAMP(14.0 * scale_ref, 10.0, 20.0);
-    double handle_thick = 3.0;
+    double corner_len = CLAMP(26.0 * scale_ref, 18.0, 36.0);
+    double edge_len = CLAMP(20.0 * scale_ref, 14.0, 28.0);
+    double handle_thick = 4.0;
     int i;
 
     cairo_set_source_rgba(cr, 0, 0, 0, 0.55);

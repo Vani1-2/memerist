@@ -32,7 +32,7 @@
     </linearGradient>
   </defs>
   <g id="layer1" transform="translate(-32.279167,-138.64166)"/>
-  <g filter="url(#shadow)" style="" transform="matrix(0.181034, 0, 0, 0.181034, 5.508938, 5.324891)">
+  <g style="" transform="matrix(0.181034, 0, 0, 0.181034, 5.508938, 5.324891)">
     <rect x="-10.625" y="12.447" width="146.306" height="124.286" rx="8" ry="8" style="fill-rule: evenodd; paint-order: stroke markers; fill: rgb(61, 56, 70);"/>
     <rect rx="7.733" ry="7.733" y="74.102" x="-10.741" style="display: inline; fill: url(&quot;#linearGradient56&quot;); fill-opacity: 1; stroke-width: 0.818182;" width="146.552" height="62.681" id="rect41"/>
     <rect x="-10.677" y="-8.176" width="146.381" height="135.183" rx="8" ry="8" style="fill: url(&quot;#gradient-0&quot;);"/>

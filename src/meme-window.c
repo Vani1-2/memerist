@@ -584,6 +584,12 @@ static gboolean is_template_hidden (MemeWindow *self, const char *path) {
     return found;
 }
 
+static void update_restore_templates_sensitivity (MemeWindow *self) {
+    gchar **hidden = g_settings_get_strv (self->template_settings, "hidden-templates");
+    gtk_widget_set_sensitive (GTK_WIDGET (self->restore_templates_button), hidden[0] != NULL);
+    g_strfreev (hidden);
+}
+
 static void hide_template (MemeWindow *self, const char *path) {
     gchar **hidden = g_settings_get_strv (self->template_settings, "hidden-templates");
     GPtrArray *updated = g_ptr_array_new ();
@@ -601,6 +607,14 @@ static void hide_template (MemeWindow *self, const char *path) {
 
     g_ptr_array_free (updated, TRUE);
     g_strfreev (hidden);
+
+    update_restore_templates_sensitivity (self);
+}
+
+static void on_restore_templates_clicked (MemeWindow *self) {
+    g_settings_reset (self->template_settings, "hidden-templates");
+    populate_template_gallery (self);
+    update_restore_templates_sensitivity (self);
 }
 
 static void scan_resources_for_templates (MemeWindow *self) {
@@ -790,6 +804,7 @@ static void update_template_gallery_empty_state (MemeWindow *self) {
     gboolean has_templates = count_flowbox_children (self->template_gallery) > 0;
     gtk_stack_set_visible_child_name (self->template_content_stack,
                                        has_templates ? "gallery" : "empty");
+    gtk_widget_set_sensitive (GTK_WIDGET (self->select_all_button), has_templates);
 }
 
 static void on_template_selection_changed (GtkFlowBox *flowbox, MemeWindow *self) {
@@ -832,7 +847,7 @@ static void set_template_select_mode (MemeWindow *self, gboolean active) {
     gtk_widget_set_visible (GTK_WIDGET (self->select_all_button), active);
     gtk_widget_set_visible (GTK_WIDGET (self->delete_template_button), active);
     gtk_widget_set_sensitive (GTK_WIDGET (self->delete_template_button), FALSE);
-    //gtk_button_set_label (self->select_all_button, "Select All");
+    gtk_button_set_label (self->select_all_button, "Select All");
 
     if (active) {
         gtk_button_set_label (self->select_mode_button, "Cancel");
@@ -1068,15 +1083,18 @@ static void meme_window_init (MemeWindow *self) {
         self->delete_template_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "delete_template_button"));
         self->select_mode_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "select_mode_button"));
         self->select_all_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "select_all_button"));
+        self->restore_templates_button = GTK_BUTTON (gtk_builder_get_object (template_builder, "restore_templates_button"));
         self->template_content_stack = GTK_STACK (gtk_builder_get_object (template_builder, "template_content_stack"));
         g_object_unref (template_builder);
     }
 
     self->template_settings = g_settings_new ("io.github.vani_tty1.memerist");
+    update_restore_templates_sensitivity (self);
 
     g_signal_connect_swapped (self->import_template_button, "clicked", G_CALLBACK (on_import_template_clicked), self);
     g_signal_connect_swapped (self->delete_template_button, "clicked", G_CALLBACK (on_delete_template_clicked), self);
     g_signal_connect_swapped (self->select_all_button, "clicked", G_CALLBACK (on_select_all_clicked), self);
+    g_signal_connect_swapped (self->restore_templates_button, "clicked", G_CALLBACK (on_restore_templates_clicked), self);
     g_signal_connect_swapped (self->select_mode_button, "clicked", G_CALLBACK (on_select_mode_clicked), self);
     g_signal_connect (self->template_gallery, "child-activated", G_CALLBACK (on_template_selected), self);
     g_signal_connect (self->template_gallery, "selected-children-changed", G_CALLBACK (on_template_selection_changed), self);

@@ -21,10 +21,18 @@ Adw.Dialog template_window {
         visible: false;
       }
 
+
+
       [end]
       Button select_mode_button {
-        icon-name: "selection-mode-symbolic";
+        icon-name: "document-edit-symbolic";
         tooltip-text: _("Manage Templates");
+      }
+
+      [end]
+      Button restore_templates_button {
+        icon-name: "edit-undo-symbolic";
+        tooltip-text: _("Restore Built-in Templates");
       }
 
       [end]

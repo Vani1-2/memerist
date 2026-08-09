@@ -166,9 +166,7 @@ static void on_rotate_clicked (GtkWidget *btn, MemeWindow *self) {
     new_pix = gdk_pixbuf_rotate_simple (self->template_image,
     clockwise ? GDK_PIXBUF_ROTATE_CLOCKWISE : GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE);
     update_template_image (self, new_pix);
-    // Rotating swaps width/height, so any in-progress crop selection no
-    // longer refers to the same region of the image. Discard it rather
-    // than silently applying a now-wrong rectangle on the next Apply Crop.
+    meme_window_transform_gif_frames_rotate (self, clockwise);
     if (gtk_toggle_button_get_active (self->crop_mode_button)) {
         self->crop_x = 0.0; self->crop_y = 0.0;
         self->crop_w = 1.0; self->crop_h = 1.0;
@@ -184,6 +182,7 @@ static void on_flip_clicked (GtkWidget *btn, MemeWindow *self) {
                  (btn == GTK_WIDGET (self->footer_flip_h_button));
     new_pix = gdk_pixbuf_flip (self->template_image, horizontal);
     update_template_image (self, new_pix);
+    meme_window_transform_gif_frames_flip (self, horizontal);
     // Same reasoning as rotate: don't let a stale crop selection carry
     // over onto the flipped image.
     if (gtk_toggle_button_get_active (self->crop_mode_button)) {
@@ -250,6 +249,7 @@ static void on_crop_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
     gtk_widget_set_visible (GTK_WIDGET (self->layer_group), !active);
     gtk_widget_set_visible (GTK_WIDGET (self->layer_group), !active && self->selected_layer != NULL);
     if (active) {
+    meme_window_pause_gif_animation (self);
     self->crop_x = 0.0; self->crop_y = 0.0;
     self->crop_w = 1.0; self->crop_h = 1.0;
     g_clear_object (&self->crop_session_template_snapshot);
@@ -257,6 +257,7 @@ static void on_crop_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
         self->crop_session_template_snapshot = g_object_ref (self->template_image);
     } else {
         gtk_widget_set_cursor (GTK_WIDGET (self->meme_preview), NULL);
+        meme_window_resume_gif_animation (self);
     }
     update_footer_pages (self);
     render_meme(self);
@@ -305,6 +306,7 @@ static void on_apply_crop_clicked (MemeWindow *self) {
     new_pix = gdk_pixbuf_copy(sub);
     g_object_unref(sub);
     update_template_image(self, new_pix); 
+    meme_window_transform_gif_frames_crop (self, x, y, w, h);
     self->crop_x = 0; self->crop_y = 0; self->crop_w = 1; self->crop_h = 1;
     gtk_toggle_button_set_active(self->crop_mode_button, FALSE);
     g_clear_object (&self->crop_session_template_snapshot);
@@ -404,6 +406,7 @@ static void on_delete_layer_clicked (MemeWindow *self) {
 }
 
 void on_clear_clicked (MemeWindow *self) {
+    meme_window_stop_gif_animation (self);
     gtk_stack_set_visible_child_name (self->content_stack, "empty");
     g_clear_object (&self->template_image);
     g_clear_object (&self->final_meme);
@@ -461,6 +464,7 @@ void on_copy_clipboard_clicked (MemeWindow *self) {
 
 static void myapp_window_finalize (GObject *object) {
     MemeWindow *self = MEME_WINDOW (object);
+    meme_window_stop_gif_animation (self);
     g_clear_object (&self->template_image);
     g_clear_object (&self->final_meme);
     g_clear_object (&self->crop_session_template_snapshot);
@@ -663,6 +667,12 @@ static void on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, M
     if (self->layers) { meme_layer_list_free (self->layers); self->layers = NULL; }
     free_history_stack (&self->undo_stack); free_history_stack (&self->redo_stack);
 
+    g_clear_pointer (&self->template_gif_path, g_free);
+    self->template_is_gif = !g_str_has_prefix (template_path, "resource://") &&
+                             g_str_has_suffix (template_path, ".gif");
+    if (self->template_is_gif)
+        self->template_gif_path = g_strdup (template_path);
+
     if (g_str_has_prefix (template_path, "resource://")) {
         self->template_image = gdk_pixbuf_new_from_resource (template_path + 11, &error);
     } else {
@@ -687,6 +697,7 @@ static void on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, M
         self->zoom_level = 1.0;
         apply_zoom(self);
         render_meme (self);
+        meme_window_start_gif_animation (self);
         adw_dialog_close (self->template_window);
     }
 }

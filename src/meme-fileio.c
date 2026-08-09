@@ -68,6 +68,7 @@ meme_window_open_file (MemeWindow *self, GFile *file)
         self->zoom_level = 1.0;
         apply_zoom (self);
         render_meme (self);
+        meme_window_start_gif_animation (self);
     }
 
     g_free (path);
@@ -97,6 +98,193 @@ magick_frame_to_pixbuf(MagickWand *wand)
     return gdk_pixbuf_new_from_data(buf, GDK_COLORSPACE_RGB, has_alpha, 8,
                                      w, h, w * (has_alpha ? 4 : 3),
                                      (GdkPixbufDestroyNotify) g_free, NULL);
+}
+
+
+GArray *
+meme_gif_decode_frames (const char *path) {
+    MagickWand *source_wand, *coalesced;
+    GArray *frames;
+    int frame_count = 0;
+
+    MagickWandGenesis ();
+    source_wand = NewMagickWand ();
+    if (MagickReadImage (source_wand, path) != MagickTrue) {
+        DestroyMagickWand (source_wand);
+        MagickWandTerminus ();
+        return NULL;
+    }
+    coalesced = MagickCoalesceImages (source_wand);
+    DestroyMagickWand (source_wand);
+
+    frames = g_array_new (FALSE, FALSE, sizeof (GifFrame));
+
+    MagickResetIterator (coalesced);
+    while (MagickNextImage (coalesced) != MagickFalse && frame_count < 200) {
+        GdkPixbuf *pix = magick_frame_to_pixbuf (coalesced);
+        GifFrame gf;
+
+        if (!pix)
+            continue;
+
+        gf.pixbuf = pix;
+        gf.delay_ms = MAX ((int) MagickGetImageDelay (coalesced) * 10, 20);
+        g_array_append_val (frames, gf);
+        frame_count++;
+    }
+    DestroyMagickWand (coalesced);
+    MagickWandTerminus ();
+
+    if (frames->len == 0) {
+        g_array_free (frames, TRUE);
+        return NULL;
+    }
+    return frames;
+}
+
+void
+meme_gif_frames_free (GArray *frames) {
+    guint i;
+
+    if (!frames)
+        return;
+
+    for (i = 0; i < frames->len; i++) {
+        GifFrame *f = &g_array_index (frames, GifFrame, i);
+        g_clear_object (&f->pixbuf);
+    }
+    g_array_free (frames, TRUE);
+}
+
+static gboolean
+on_gif_preview_tick (gpointer user_data) {
+    MemeWindow *self = MEME_WINDOW (user_data);
+    GifFrame *frame;
+    GdkPixbuf *copy;
+
+    if (!self->gif_frames || self->gif_frames->len == 0) {
+        self->gif_timeout_id = 0;
+        return G_SOURCE_REMOVE;
+    }
+
+    if (self->drag_type != DRAG_TYPE_NONE) {
+        self->gif_timeout_id = g_timeout_add (40, on_gif_preview_tick, self);
+        return G_SOURCE_REMOVE;
+    }
+
+    self->gif_frame_index = (self->gif_frame_index + 1) % self->gif_frames->len;
+    frame = &g_array_index (self->gif_frames, GifFrame, self->gif_frame_index);
+
+
+    copy = gdk_pixbuf_copy (frame->pixbuf);
+    g_clear_object (&self->template_image);
+    self->template_image = copy;
+    render_meme (self);
+
+    self->gif_timeout_id = g_timeout_add (frame->delay_ms, on_gif_preview_tick, self);
+    return G_SOURCE_REMOVE;
+}
+
+void
+meme_window_pause_gif_animation (MemeWindow *self) {
+    if (self->gif_timeout_id) {
+        g_source_remove (self->gif_timeout_id);
+        self->gif_timeout_id = 0;
+    }
+}
+
+void
+meme_window_resume_gif_animation (MemeWindow *self) {
+    GifFrame *frame;
+
+    if (self->gif_timeout_id || !self->gif_frames || self->gif_frames->len == 0)
+        return;
+
+    frame = &g_array_index (self->gif_frames, GifFrame, self->gif_frame_index);
+    self->gif_timeout_id = g_timeout_add (frame->delay_ms, on_gif_preview_tick, self);
+}
+
+void
+meme_window_transform_gif_frames_rotate (MemeWindow *self, gboolean clockwise) {
+    guint i;
+
+    if (!self->gif_frames)
+        return;
+
+    for (i = 0; i < self->gif_frames->len; i++) {
+        GifFrame *f = &g_array_index (self->gif_frames, GifFrame, i);
+        GdkPixbuf *rotated = gdk_pixbuf_rotate_simple (f->pixbuf,
+            clockwise ? GDK_PIXBUF_ROTATE_CLOCKWISE : GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE);
+        g_object_unref (f->pixbuf);
+        f->pixbuf = rotated;
+    }
+}
+
+void
+meme_window_transform_gif_frames_flip (MemeWindow *self, gboolean horizontal) {
+    guint i;
+
+    if (!self->gif_frames)
+        return;
+
+    for (i = 0; i < self->gif_frames->len; i++) {
+        GifFrame *f = &g_array_index (self->gif_frames, GifFrame, i);
+        GdkPixbuf *flipped = gdk_pixbuf_flip (f->pixbuf, horizontal);
+        g_object_unref (f->pixbuf);
+        f->pixbuf = flipped;
+    }
+}
+
+void
+meme_window_transform_gif_frames_crop (MemeWindow *self, int x, int y, int w, int h) {
+    guint i;
+
+    if (!self->gif_frames)
+        return;
+
+    for (i = 0; i < self->gif_frames->len; i++) {
+        GifFrame *f = &g_array_index (self->gif_frames, GifFrame, i);
+        int fw = gdk_pixbuf_get_width (f->pixbuf);
+        int fh = gdk_pixbuf_get_height (f->pixbuf);
+        int cx = CLAMP (x, 0, fw - 1);
+        int cy = CLAMP (y, 0, fh - 1);
+        int cw = CLAMP (w, 1, fw - cx);
+        int ch = CLAMP (h, 1, fh - cy);
+        GdkPixbuf *sub = gdk_pixbuf_new_subpixbuf (f->pixbuf, cx, cy, cw, ch);
+        GdkPixbuf *copy = gdk_pixbuf_copy (sub);
+        g_object_unref (sub);
+        g_object_unref (f->pixbuf);
+        f->pixbuf = copy;
+    }
+}
+
+void
+meme_window_stop_gif_animation (MemeWindow *self) {
+    if (self->gif_timeout_id) {
+        g_source_remove (self->gif_timeout_id);
+        self->gif_timeout_id = 0;
+    }
+    if (self->gif_frames) {
+        meme_gif_frames_free (self->gif_frames);
+        self->gif_frames = NULL;
+    }
+}
+
+void meme_window_start_gif_animation (MemeWindow *self) {
+    GifFrame *first;
+
+    meme_window_stop_gif_animation (self);
+
+    if (!self->template_is_gif || !self->template_gif_path)
+        return;
+
+    self->gif_frames = meme_gif_decode_frames (self->template_gif_path);
+    if (!self->gif_frames || self->gif_frames->len <= 1)
+        return;
+
+    self->gif_frame_index = 0;
+    first = &g_array_index (self->gif_frames, GifFrame, 0);
+    self->gif_timeout_id = g_timeout_add (first->delay_ms, on_gif_preview_tick, self);
 }
 
 static void export_gif_thread(GTask *task, gpointer source_object, gpointer task_data, GCancellable *cancellable) {

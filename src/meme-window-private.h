@@ -4,6 +4,11 @@
 #include "meme-core.h"
 #include "meme-renderer.h"
 
+typedef struct {
+    GdkPixbuf *pixbuf;
+    guint      delay_ms;
+} GifFrame;
+
 struct _MemeWindow {
     AdwApplicationWindow parent_instance;
     AdwPreferencesGroup *layer_group;
@@ -58,6 +63,9 @@ struct _MemeWindow {
 
     gboolean  template_is_gif;
     gchar    *template_gif_path;
+    GArray   *gif_frames;
+    guint     gif_frame_index;
+    guint     gif_timeout_id;
     GtkBox *export_loading_screen;
     GtkPopover *file_popover;
 
@@ -92,3 +100,13 @@ void render_meme(MemeWindow *self);
 void on_clear_clicked(MemeWindow *self);
 void apply_zoom(MemeWindow *self);
 void update_template_image(MemeWindow *self, GdkPixbuf *new_pixbuf);
+
+GArray  *meme_gif_decode_frames (const char *path);
+void     meme_gif_frames_free (GArray *frames);
+void     meme_window_start_gif_animation (MemeWindow *self);
+void     meme_window_stop_gif_animation (MemeWindow *self);
+void     meme_window_pause_gif_animation (MemeWindow *self);
+void     meme_window_resume_gif_animation (MemeWindow *self);
+void     meme_window_transform_gif_frames_rotate (MemeWindow *self, gboolean clockwise);
+void     meme_window_transform_gif_frames_flip (MemeWindow *self, gboolean horizontal);
+void     meme_window_transform_gif_frames_crop (MemeWindow *self, int x, int y, int w, int h);

@@ -24,6 +24,11 @@ menu primary_menu {
     }
 
     item {
+      label: _("_Show Welcome Dialog");
+      action: "app.welcome";
+    }
+
+    item {
       label: _("_About Memerist");
       action: "app.about";
     }
@@ -858,8 +863,9 @@ template $MemeWindow: Adw.ApplicationWindow {
             }
 
             Adw.PreferencesGroup {
-              title: _("Templates");
+              title: _("Miscellaneous");
               Adw.ActionRow open_template_row {
+                title: _("Templates");
                 subtitle: _("Browse and choose a template image");
                 activatable: true;
                 activated => $on_open_template_window_clicked() swapped;

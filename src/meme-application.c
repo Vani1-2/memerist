@@ -22,6 +22,7 @@
 #include "meme-application.h"
 #include "adwaita.h"
 #include "meme-window.h"
+#include "meme-welcome-dialog.h"
 #include "config.h"
 #include <epoxy/gl.h>
 #include "gdk/gdk.h"
@@ -54,16 +55,21 @@ static void
 meme_application_activate (GApplication *app)
 {
   GtkWindow *window;
+  gboolean is_new_window;
 
   g_assert (MEME_IS_APPLICATION (app));
 
   window = gtk_application_get_active_window (GTK_APPLICATION (app));
+  is_new_window = (window == NULL);
   if (window == NULL)
     window = g_object_new (MEME_TYPE_WINDOW,
                            "application", app,
                            NULL);
 
   gtk_window_present (window);
+
+  if (is_new_window)
+    meme_maybe_show_welcome_dialog (window);
 }
 
 static void
@@ -84,8 +90,8 @@ meme_application_about_action (GSimpleAction *action,
     g_autoptr(GError) error = NULL;
     g_autofree char *debug_text = NULL;
     AdwDialog *dialog;
-    static const char *developers[] = {"vani-tty1", NULL};
-    static const char *designers[] = {"vani-tty1", NULL};
+    static const char *developers[] = {"Giovanni Rafanan <giovannirafanan609@gmail.com>", NULL};
+    static const char *designers[] = {"Giovanni Rafanan <giovannirafanan609@gmail.com>", NULL};
 
     display = gdk_display_get_default();
     ctx = gdk_display_create_gl_context(display, &err);
@@ -129,20 +135,27 @@ meme_application_about_action (GSimpleAction *action,
         os_release_content
     );
 
-    dialog = adw_about_dialog_new_from_appdata(
-        "/io/github/vani_tty1/memerist/io.github.vani_tty1.memerist.metainfo.xml",
-        PACKAGE_VERSION
-    );
+    dialog = adw_about_dialog_new ();
+
+    adw_about_dialog_set_application_name (ADW_ABOUT_DIALOG (dialog), "Memerist");
+    adw_about_dialog_set_application_icon (ADW_ABOUT_DIALOG (dialog), "io.github.vani_tty1.memerist");
+    adw_about_dialog_set_version (ADW_ABOUT_DIALOG (dialog), PACKAGE_VERSION);
+    adw_about_dialog_set_comments (ADW_ABOUT_DIALOG (dialog), "Create memes with text overlays");
+    adw_about_dialog_set_developer_name (ADW_ABOUT_DIALOG (dialog), "Giovanni Rafanan");
+    adw_about_dialog_set_license_type (ADW_ABOUT_DIALOG (dialog), GTK_LICENSE_GPL_3_0);
+    adw_about_dialog_set_copyright (ADW_ABOUT_DIALOG (dialog), "© 2025 Giovanni Rafanan");
+
+    adw_about_dialog_set_website (ADW_ABOUT_DIALOG (dialog), "https://github.com/vani-tty1/memerist");
+    adw_about_dialog_set_issue_url (ADW_ABOUT_DIALOG (dialog), "https://github.com/vani-tty1/memerist/issues");
+    adw_about_dialog_set_support_url (ADW_ABOUT_DIALOG (dialog), "https://github.com/vani-tty1/memerist/discussions");
 
     adw_about_dialog_set_developers(ADW_ABOUT_DIALOG(dialog), developers);
     adw_about_dialog_set_designers(ADW_ABOUT_DIALOG(dialog), designers);
-    adw_about_dialog_set_version(ADW_ABOUT_DIALOG(dialog), PACKAGE_VERSION);
     adw_about_dialog_set_debug_info(ADW_ABOUT_DIALOG(dialog), debug_text);
     adw_about_dialog_set_debug_info_filename(ADW_ABOUT_DIALOG(dialog), "meme-debug.txt");
 
     adw_dialog_present(dialog, GTK_WIDGET(window));
 }
-
 
 
 static void
@@ -194,10 +207,23 @@ meme_application_color_scheme_action (GSimpleAction *action,
   g_simple_action_set_state (action, parameter);
 }
 
+static void
+meme_application_welcome_action (GSimpleAction *action,
+                                  GVariant      *parameter,
+                                  gpointer       user_data)
+{
+  MemeApplication *self = user_data;
+  GtkWindow *parent = gtk_application_get_active_window (GTK_APPLICATION (self));
+
+  if (parent)
+    meme_show_welcome_dialog (parent);
+}
+
 static const GActionEntry app_actions[] = {
   { "quit", meme_application_quit_action },
   { "about", meme_application_about_action },
   { "shortcuts", meme_application_shortcuts_action },
+  { "welcome", meme_application_welcome_action },
   { "color-scheme", meme_application_color_scheme_action, "s", "'default'", NULL },
 };
 

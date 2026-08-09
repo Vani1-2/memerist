@@ -36,5 +36,11 @@
 			<summary>Hidden built-in templates</summary>
 			<description>Resource paths of built-in templates the user has deleted</description>
 		</key>
+
+		<key name="first-run-complete" type="b">
+			<default>false</default>
+			<summary>First run welcome dialog dismissed</summary>
+			<description>Whether the first-run welcome dialog has already been shown and dismissed</description>
+		</key>
 	</schema>
 </schemalist>

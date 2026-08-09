@@ -1,0 +1,65 @@
+using Gtk 4.0;
+using Adw 1;
+
+Adw.Dialog welcome_dialog {
+  title: _("Welcome");
+  content-width: 600;
+  content-height: 480;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-start-title-buttons: false;
+      show-end-title-buttons: false;
+      show-title: false;
+
+      [start]
+      Button skip_button {
+        label: _("Skip");
+
+        styles ["flat",]
+      }
+    }
+
+    content: Box {
+      orientation: vertical;
+      vexpand: true;
+
+      Adw.Carousel welcome_carousel {
+        vexpand: true;
+        allow-scroll-wheel: true;
+      }
+
+      Adw.CarouselIndicatorDots {
+        carousel: welcome_carousel;
+        margin-top: 6;
+        margin-bottom: 6;
+      }
+
+      Box {
+        orientation: horizontal;
+        margin-top: 6;
+        margin-bottom: 18;
+        margin-start: 18;
+        margin-end: 18;
+
+        Button previous_button {
+          label: _("Previous");
+          visible: false;
+
+          styles ["pill",]
+        }
+
+        Box {
+          hexpand: true;
+        }
+
+        Button next_button {
+          label: _("Next");
+
+          styles ["suggested-action", "pill",]
+        }
+      }
+    };
+  };
+}

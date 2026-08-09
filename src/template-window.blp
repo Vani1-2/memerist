@@ -2,63 +2,64 @@ using Gtk 4.0;
 using Adw 1;
 
 Adw.Dialog template_window {
-  title: _("Templates");
   content-width: 480;
   content-height: 640;
+  width-request: 320;
+  height-request: 320;
+
+  Adw.Breakpoint {
+    condition ("max-width: 440px")
+    setters {
+      dialog_title.visible: false;
+    }
+  }
 
   child: Adw.ToolbarView {
     [top]
     Adw.HeaderBar {
+      title-widget: Adw.WindowTitle dialog_title {
+        title: _("Templates");
+      };
+
       [start]
       Button import_template_button {
         icon-name: "list-add-symbolic";
         tooltip-text: _("Import Template");
       }
-
       [start]
       Button select_all_button {
         label: _("Select All");
         visible: false;
       }
-
-
-
       [end]
       Button select_mode_button {
         icon-name: "document-edit-symbolic";
         tooltip-text: _("Manage Templates");
       }
-
       [end]
       Button restore_templates_button {
         icon-name: "edit-undo-symbolic";
         tooltip-text: _("Restore Built-in Templates");
       }
-
       [end]
       Button delete_template_button {
         icon-name: "user-trash-symbolic";
         tooltip-text: _("Delete Selected Templates");
         sensitive: false;
         visible: false;
-
-        styles [
-          "destructive-action",
-        ]
+        styles ["destructive-action"]
       }
     }
 
     content: Stack template_content_stack {
       hexpand: true;
       vexpand: true;
-
       StackPage {
         name: "gallery";
         child: ScrolledWindow {
           hexpand: true;
           vexpand: true;
           hscrollbar-policy: never;
-
           FlowBox template_gallery {
             selection-mode: single;
             max-children-per-line: 3;
@@ -73,7 +74,6 @@ Adw.Dialog template_window {
           }
         };
       }
-
       StackPage {
         name: "empty";
         child: Adw.StatusPage {

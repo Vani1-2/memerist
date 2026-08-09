@@ -853,7 +853,7 @@ static void set_template_select_mode (MemeWindow *self, gboolean active) {
         gtk_button_set_label (self->select_mode_button, "Cancel");
         gtk_widget_set_tooltip_text (GTK_WIDGET (self->select_mode_button), "Cancel");
     } else {
-        gtk_button_set_icon_name (self->select_mode_button, "selection-mode-symbolic");
+        gtk_button_set_icon_name (self->select_mode_button, "document-edit-symbolic");
         gtk_widget_set_tooltip_text (GTK_WIDGET (self->select_mode_button), "Manage Templates");
     }
 }

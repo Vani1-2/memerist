@@ -5,6 +5,7 @@
     <file preprocess="xml-stripblanks">shortcuts-dialog.ui</file>
     <file preprocess="xml-stripblanks">theme-switcher.ui</file>
     <file preprocess="xml-stripblanks">template-window.ui</file>
+    <file preprocess="xml-stripblanks">welcome-dialog.ui</file>
     <file>io.github.vani_tty1.memerist.metainfo.xml</file>
     <file>style.css</file>
     <file>templates/template1.jpeg</file>
@@ -30,5 +31,6 @@
     <file>templates/template21.png</file>
     <file>templates/template22.png</file>
     <file>templates/template23.jpeg</file>
+    <file>screenshot/welcome_ss.png</file>
   </gresource>
 </gresources>

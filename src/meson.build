@@ -25,7 +25,7 @@ myapp_sources = [
 
 myapp_deps = [
   dependency('gtk4'),
-  dependency('libadwaita-1', version: '>= 1.4'),
+  dependency('libadwaita-1', version: '>= 1.9'),
   dependency('cairo'),
   dependency('epoxy'),
   dependency('MagickWand'),

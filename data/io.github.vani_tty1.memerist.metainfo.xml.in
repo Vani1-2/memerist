@@ -88,6 +88,25 @@
 
 	<releases>
 
+	    <release version="2.0.0" date="2026-08-9">
+			<url type="details">https://github.com/vani-tty1/memerist/releases/latest/</url>
+			<description>
+			  <p>
+			    This is a stable release with the following changes:
+			  </p>
+				<ul>
+				    <li>New welcome screen.</li>
+				    <li>Update to latest ImageMagick.</li>
+				    <li>Templates are now in its separate window.</li>
+				    <li>Improve template management.</li>
+				    <li>Built-in templates are now deletable but can also be restored.</li>
+				    <li>GIF's are now displayed and animated correctly in the preview.</li>
+				    <li>Fixed double shadow appearing in the app icon in about_dialog.</li>
+				</ul>
+			</description>
+		  </release>
+
+
 	    <release version="1.1.0" date="2026-08-4">
 			<url type="details">https://github.com/vani-tty1/memerist/releases/latest/</url>
 			<description>

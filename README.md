@@ -15,6 +15,8 @@
     <img width='200' alt='Get it on Flathub' src='https://flathub.org/api/badge?locale=en'/>
 </a>
 
+[![CI Build Flatpak](https://github.com/vani-tty1/memerist/actions/workflows/flatpak-build.yml/badge.svg)](https://github.com/vani-tty1/memerist/actions/workflows/flatpak-build.yml)
+
 ### Other Packaging Formats
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/memerist.svg)](https://repology.org/project/memerist/versions)

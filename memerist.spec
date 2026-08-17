@@ -1,5 +1,5 @@
 Name:           memerist
-Version:        1.1.0
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Meme generator with text overlays
 License:        GPL-3.0-or-later
@@ -15,7 +15,7 @@ Create memes with custom text overlays using a native GNOME interface.
 %autosetup -n memerist-%{version}
 
 %build
-%meson 
+%meson
 %meson_build
 
 %install
@@ -35,6 +35,12 @@ Create memes with custom text overlays using a native GNOME interface.
 
 
 %changelog
-* Tue Aug 04 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 1.1.0-1
-- Redesigned crop overlay
-- Improve crop overlay smoothness when dragging
+* Mon Aug 17 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 2.0.0-1
+- Minimum version required for libadwaita increased from 1.4 to 1.9.
+- New welcome screen.
+- Update to latest ImageMagick.
+- Templates are now in its separate window.
+- Improve template management.
+- Built-in templates are now deletable but can also be restored.
+- GIF's are now displayed and animated correctly in the preview.
+- Fixed double shadow appearing in the app icon in about_dialog.

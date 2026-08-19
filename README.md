@@ -15,6 +15,8 @@
     <img width='200' alt='Get it on Flathub' src='https://flathub.org/api/badge?locale=en'/>
 </a>
 
+<br>
+
 [![CI Build Flatpak](https://github.com/vani-tty1/memerist/actions/workflows/flatpak-build.yml/badge.svg)](https://github.com/vani-tty1/memerist/actions/workflows/flatpak-build.yml)
 
 ### Other Packaging Formats
@@ -23,56 +25,8 @@
 
 ## Building from Source
 
-[GNOME Builder](https://flathub.org/en/apps/org.gnome.Builder) is the recommended way to build this app,
-the IDE handles all dependencies for you via the GNOME SDK, so you can skip the Prerequisites section entirely.
-If you'd rather not use Builder, follow the manual instructions below.
-
-### Prerequisites
-
-> **Note:** This is only required if you're building outside GNOME Builder.
-
-Install the following development packages:
-
-| Package               | Purpose                          |
-|------------------------|-----------------------------------|
-| `gcc`                  | C compiler                       |
-| `make`                 | Build automation                 |
-| `gtk4-devel`           | Core UI toolkit                  |
-| `libadwaita-devel`     | GNOME design components          |
-| `meson`                | Build system                     |
-| `ninja`                | Build backend                    |
-| `blueprint-compiler`   | UI markup compiler               |
-| `libepoxy-devel`       | OpenGL stuff                     |
-| `ImageMagick`          | GIF export support               |
-| `ImageMagick-devel`    | MagickWand API for image processing libraries  |
-| `pkgconf`              | Provides `pkg-config`            |
-| `glib2-devel`          | Provides `glib-compile-schemas`  |
-| `gettext`              | Provides `msgfmt`, `msginit`, `msgmerge`, `xgettext` for translations    |
-
-
-
-Optional packages to be installed:
-
-| Package                 | Purpose                                         |
-|--------------------------|-----------------------------------------------|
-| `appstream`              | Provides `appstreamcli` to validate the AppStream metadata     |
-| `desktop-file-utils`     | Provides `desktop-file-validate` and `update-desktop-database` |
-
-
-### Build Instructions
-
-```bash
-# Clone the repository and enter the directory
-git clone https://github.com/vani-tty1/memerist.git
-cd memerist
-
-# Compile and run:
-make run
-
-# View more options:
-make help
-```
-
+If you are a package maintainer/distributor or just want to build this from source,
+see [here](BUILDING.md)
 
 ## Contributing
 

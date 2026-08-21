@@ -1,5 +1,12 @@
+### Overview 
+
 > **Note:** [GNOME Builder](https://flathub.org/en/apps/org.gnome.Builder) is the recommended way to build this app,
-the IDE handles all dependencies for you via the GNOME SDK, so you can skip the Prerequisites section entirely.
+the IDE handles all dependencies for you via the GNOME SDK, so you can skip the [Prerequisites](#prerequisites) section entirely.
+
+Memerist uses the [`meson`](https://mesonbuild.com/) build system to configure the build and detect dependencies
+and [`ninja`](https://ninja-build.org/) as its backend compile it, this makes life easier.
+You generally won't need to touch either directly if you use BUILDER or the [make targets](#build-instructions).
+
 
 You can choose between two build manifest for GNOME Builder to use found in the [build-aux](build-aux/) directory:
 
@@ -13,11 +20,6 @@ consumes more memory as it contains more debug symbols, so used this when you wa
 **If you'd rather not use Builder, follow the manual instructions below.**
 
 
-### Overview 
-
-Memerist uses the [`meson`](https://mesonbuild.com/) build system to configure the build and detect dependencies
-and [`ninja`](https://ninja-build.org/) as its backend compile it, this makes life easier.
-You generally won't need to touch either directly if you use the [make targets](#build-instructions) below.
 
 
 ### Prerequisites

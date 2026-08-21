@@ -38,7 +38,7 @@ check-deps:
 		fi; \
 	done; \
 	if [ $$failed -ne 0 ]; then \
-		echo "\n\033[31mError: Missing dependencies. Please install the failed items.\033[0m"; \
+		printf "\n\033[31mError: Missing dependencies. Please install the failed items.\033[0m\n"; \
 		exit 1; \
 	fi
 

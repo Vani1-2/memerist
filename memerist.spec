@@ -5,7 +5,7 @@ Summary:        A simple meme editor for Linux
 License:        GPL-3.0-or-later
 URL:            https://github.com/vani-tty1/memerist
 Source0:        %{url}/archive/refs/tags/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires:  meson ninja gcc gtk4-devel libadwaita-devel appstream
+BuildRequires:  meson ninja-build gcc gtk4-devel libadwaita-devel appstream
 BuildRequires:  desktop-file-utils blueprint-compiler libepoxy-devel ImageMagick ImageMagick-devel
 Requires:       gtk4 libadwaita ImageMagick libepoxy 
 

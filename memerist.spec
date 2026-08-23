@@ -1,15 +1,16 @@
 Name:           memerist
 Version:        2.0.0
-Release:        1%{?dist}
-Summary:        Meme generator with text overlays
+Release:        2%{?dist}
+Summary:        A simple meme editor for Linux
 License:        GPL-3.0-or-later
 URL:            https://github.com/vani-tty1/memerist
 Source0:        %{url}/archive/refs/tags/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires:  meson gcc pkgconfig(gtk4) pkgconfig(libadwaita-1) pkgconfig(cairo) appstream
+BuildRequires:  meson ninja gcc gtk4-devel libadwaita-devel appstream
 BuildRequires:  desktop-file-utils blueprint-compiler libepoxy-devel ImageMagick ImageMagick-devel
-Requires:       gtk4 libadwaita ImageMagick
+Requires:       gtk4 libadwaita ImageMagick libepoxy 
+
 %description
-Create memes with custom text overlays using a native GNOME interface.
+Simple Libadwaita app for editing memes. 
 
 %prep
 %autosetup -n memerist-%{version}
@@ -35,7 +36,7 @@ Create memes with custom text overlays using a native GNOME interface.
 
 
 %changelog
-* Mon Aug 17 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 2.0.0-1
+* Sun Aug 23 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 2.0.0-2
 - Minimum version required for libadwaita increased from 1.4 to 1.9.
 - New welcome screen.
 - Update to latest ImageMagick.

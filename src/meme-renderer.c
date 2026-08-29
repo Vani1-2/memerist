@@ -427,6 +427,94 @@ void meme_draw_crop_chrome (cairo_t *cr, double w, double h,
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
 }
 
+GdkPixbuf *meme_bake_stroke_pixbuf (GArray *points, int img_w, int img_h,
+                                     double line_width, const GdkRGBA *color,
+                                     double *out_cx, double *out_cy,
+                                     double *out_w, double *out_h) {
+    double min_x, min_y, max_x, max_y, pad, bw, bh;
+    int surf_w, surf_h, i;
+    cairo_surface_t *surf;
+    cairo_t *cr;
+    GdkPixbuf *pixbuf;
+
+    if (!points || points->len == 0) return NULL;
+
+    min_x = min_y = G_MAXDOUBLE;
+    max_x = max_y = -G_MAXDOUBLE;
+    for (i = 0; i < (int) points->len; i++) {
+        StrokePoint p = g_array_index (points, StrokePoint, i);
+        double px = p.x * img_w, py = p.y * img_h;
+        min_x = MIN (min_x, px); max_x = MAX (max_x, px);
+        min_y = MIN (min_y, py); max_y = MAX (max_y, py);
+    }
+
+    pad = line_width / 2.0 + 2.0;
+    min_x -= pad; min_y -= pad; max_x += pad; max_y += pad;
+    bw = MAX (max_x - min_x, 1.0);
+    bh = MAX (max_y - min_y, 1.0);
+    surf_w = (int) ceil (bw);
+    surf_h = (int) ceil (bh);
+
+    surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, surf_w, surf_h);
+    cr = cairo_create (surf);
+    cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
+    cairo_paint (cr);
+    cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+
+    cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_join (cr, CAIRO_LINE_JOIN_ROUND);
+    cairo_set_line_width (cr, line_width);
+    cairo_set_source_rgba (cr, color->red, color->green, color->blue, color->alpha);
+
+    for (i = 0; i < (int) points->len; i++) {
+        StrokePoint p = g_array_index (points, StrokePoint, i);
+        double px = p.x * img_w - min_x;
+        double py = p.y * img_h - min_y;
+        if (i == 0) cairo_move_to (cr, px, py);
+        else cairo_line_to (cr, px, py);
+    }
+    if (points->len == 1) {
+        StrokePoint p = g_array_index (points, StrokePoint, 0);
+        cairo_line_to (cr, p.x * img_w - min_x + 0.01, p.y * img_h - min_y + 0.01);
+    }
+    cairo_stroke (cr);
+    cairo_surface_flush (surf);
+
+    pixbuf = gdk_pixbuf_get_from_surface (surf, 0, 0, surf_w, surf_h);
+    cairo_destroy (cr);
+    cairo_surface_destroy (surf);
+
+    *out_cx = (min_x + bw / 2.0) / img_w;
+    *out_cy = (min_y + bh / 2.0) / img_h;
+    *out_w = surf_w;
+    *out_h = surf_h;
+    return pixbuf;
+}
+
+void meme_draw_stroke_preview (cairo_t *cr, GArray *points,
+                                double img_w, double img_h, double scale,
+                                double off_x, double off_y,
+                                double line_width, const GdkRGBA *color) {
+    int i;
+    if (!points || points->len == 0) return;
+
+    cairo_save (cr);
+    cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_join (cr, CAIRO_LINE_JOIN_ROUND);
+    cairo_set_line_width (cr, MAX (line_width * scale, 1.0));
+    cairo_set_source_rgba (cr, color->red, color->green, color->blue, color->alpha);
+
+    for (i = 0; i < (int) points->len; i++) {
+        StrokePoint p = g_array_index (points, StrokePoint, i);
+        double x = off_x + p.x * img_w * scale;
+        double y = off_y + p.y * img_h * scale;
+        if (i == 0) cairo_move_to (cr, x, y);
+        else cairo_line_to (cr, x, y);
+    }
+    cairo_stroke (cr);
+    cairo_restore (cr);
+}
+
 GdkTexture *meme_render_editor_overlay(GdkPixbuf *composite, GList *layers, ImageLayer *selected, gboolean crop_active, double cx, double cy, double cw, double ch) {
     GdkPixbuf *res;
     GdkTexture *tex;

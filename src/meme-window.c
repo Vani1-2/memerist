@@ -40,8 +40,7 @@ static void draw_crop_overlay (GtkDrawingArea *area, cairo_t *cr, int width, int
     MemeWindow *self = MEME_WINDOW (user_data);
     double img_w, img_h, scale, off_x, off_y;
 
-    if (!self->template_image || !gtk_toggle_button_get_active (self->crop_mode_button))
-        return;
+    if (!self->template_image) return;
 
     img_w = gdk_pixbuf_get_width (self->template_image);
     img_h = gdk_pixbuf_get_height (self->template_image);
@@ -51,11 +50,16 @@ static void draw_crop_overlay (GtkDrawingArea *area, cairo_t *cr, int width, int
     off_x = (width - img_w * scale) / 2.0;
     off_y = (height - img_h * scale) / 2.0;
 
-    meme_draw_crop_chrome (cr, width, height,
-        off_x + self->crop_x * img_w * scale,
-        off_y + self->crop_y * img_h * scale,
-        self->crop_w * img_w * scale,
-        self->crop_h * img_h * scale);
+    if (gtk_toggle_button_get_active (self->crop_mode_button)) {
+        meme_draw_crop_chrome (cr, width, height,
+            off_x + self->crop_x * img_w * scale,
+            off_y + self->crop_y * img_h * scale,
+            self->crop_w * img_w * scale,
+            self->crop_h * img_h * scale);
+    } else if (self->drag_type == DRAG_TYPE_DRAW_STROKE && self->draw_points) {
+        meme_draw_stroke_preview (cr, self->draw_points, img_w, img_h, scale,
+                                   off_x, off_y, self->draw_line_width, &self->draw_color);
+    }
 }
 
 void render_meme (MemeWindow *self) {
@@ -245,6 +249,8 @@ static void on_open_template_window_clicked (MemeWindow *self) {
 
 static void on_crop_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
     gboolean active = gtk_toggle_button_get_active (btn);
+    if (active && gtk_toggle_button_get_active (self->draw_mode_button))
+        gtk_toggle_button_set_active (self->draw_mode_button, FALSE);
     gtk_widget_set_visible (GTK_WIDGET (self->transform_group), active);
     gtk_widget_set_visible (GTK_WIDGET (self->layer_group), !active);
     gtk_widget_set_visible (GTK_WIDGET (self->layer_group), !active && self->selected_layer != NULL);
@@ -261,6 +267,30 @@ static void on_crop_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
     }
     update_footer_pages (self);
     render_meme(self);
+}
+
+static void on_draw_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
+    gboolean active = gtk_toggle_button_get_active (btn);
+    if (active && gtk_toggle_button_get_active (self->crop_mode_button))
+        gtk_toggle_button_set_active (self->crop_mode_button, FALSE);
+    gtk_widget_set_visible (GTK_WIDGET (self->draw_group), active);
+    if (active) {
+        self->selected_layer = NULL;
+        sync_ui_with_layer (self);
+        gtk_widget_set_cursor_from_name (GTK_WIDGET (self->meme_preview), "crosshair");
+    } else {
+        gtk_widget_set_cursor (GTK_WIDGET (self->meme_preview), NULL);
+    }
+    render_meme (self);
+}
+
+static void on_draw_color_changed (GObject *object, GParamSpec *pspec, MemeWindow *self) {
+    const GdkRGBA *c = gtk_color_dialog_button_get_rgba (GTK_COLOR_DIALOG_BUTTON (self->draw_color_btn));
+    if (c) self->draw_color = *c;
+}
+
+static void on_draw_width_changed (GtkRange *range, MemeWindow *self) {
+    self->draw_line_width = gtk_range_get_value (range);
 }
 
 static void on_cancel_crop_clicked (MemeWindow *self) {
@@ -419,11 +449,13 @@ void on_clear_clicked (MemeWindow *self) {
     gtk_toggle_button_set_active (self->deep_fry_button, FALSE);
     gtk_toggle_button_set_active (self->cinematic_button, FALSE);
     gtk_toggle_button_set_active (self->crop_mode_button, FALSE);
+    gtk_toggle_button_set_active (self->draw_mode_button, FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->export_button), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->global_filters_button), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->add_text_button), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->add_image_button), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->crop_mode_button), FALSE);
+    gtk_widget_set_sensitive(GTK_WIDGET(self->draw_mode_button), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->save_project_button), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->zoom_in), FALSE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->zoom_out), FALSE);
@@ -471,6 +503,7 @@ static void myapp_window_finalize (GObject *object) {
     g_clear_object (&self->template_window);
     g_clear_object (&self->template_settings);
     g_free (self->template_gif_path);
+    if (self->draw_points) g_array_free (self->draw_points, TRUE);
     if (self->layers) meme_layer_list_free (self->layers);
     free_history_stack (&self->undo_stack);
     free_history_stack (&self->redo_stack);
@@ -689,6 +722,7 @@ static void on_template_selected (GtkFlowBox *flowbox, GtkFlowBoxChild *child, M
         gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->bw_button), TRUE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->crop_mode_button), TRUE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->draw_mode_button), TRUE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->save_project_button), TRUE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->global_filters_button), TRUE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->zoom_in), TRUE);
@@ -962,6 +996,11 @@ static void meme_window_class_init (MemeWindowClass *klass) {
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, layer_group);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, open_template_row);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, transform_group);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, draw_group);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, draw_mode_button);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, draw_color_btn);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, draw_width_scale);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_draw_mode_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, meme_preview);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, crop_overlay_area);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, content_stack);
@@ -1058,6 +1097,9 @@ static void meme_window_init (MemeWindow *self) {
             gtk_widget_add_css_class (GTK_WIDGET (self), "devel");
     #endif
     self->layers = NULL; self->undo_stack = NULL; self->redo_stack = NULL;
+    self->draw_points = NULL;
+    self->draw_line_width = 8.0;
+    self->draw_color = (GdkRGBA) { 0.91, 0.1, 0.15, 1.0 };
     g_signal_connect (self->text_color_btn, "notify::rgba", G_CALLBACK (on_color_changed), self);
     g_signal_connect (self->stroke_color_btn, "notify::rgba", G_CALLBACK (on_color_changed), self);
     
@@ -1069,6 +1111,9 @@ static void meme_window_init (MemeWindow *self) {
     g_signal_connect (self->crop_43_button, "clicked", G_CALLBACK (on_crop_preset_clicked), self);
     g_signal_connect (self->crop_169_button, "clicked", G_CALLBACK (on_crop_preset_clicked), self);
     g_signal_connect (self->crop_mode_button, "toggled", G_CALLBACK (on_crop_mode_toggled), self);
+    g_signal_connect (self->draw_mode_button, "toggled", G_CALLBACK (on_draw_mode_toggled), self);
+    g_signal_connect (self->draw_color_btn, "notify::rgba", G_CALLBACK (on_draw_color_changed), self);
+    g_signal_connect (self->draw_width_scale, "value-changed", G_CALLBACK (on_draw_width_changed), self);
     
     g_signal_connect_swapped (self->add_text_button, "clicked", G_CALLBACK (on_add_text_clicked), self);
     g_signal_connect (self->font_choose_btn, "notify::font-desc", G_CALLBACK (on_font_changed), self);
@@ -1135,6 +1180,7 @@ static void meme_window_init (MemeWindow *self) {
 
     g_signal_connect_swapped (self->footer_add_image_button, "clicked", G_CALLBACK (on_add_image_clicked), self);
     g_signal_connect (self->footer_crop_mode_button, "toggled", G_CALLBACK (on_crop_mode_toggled), self);
+    g_signal_connect (self->footer_draw_mode_button, "toggled", G_CALLBACK (on_draw_mode_toggled), self);
     g_signal_connect_swapped (self->footer_add_text_button, "clicked", G_CALLBACK (on_add_text_clicked), self);
     g_signal_connect_swapped (self->footer_copy_clipboard_button, "clicked", G_CALLBACK (on_copy_clipboard_clicked), self);
     g_signal_connect (self->footer_deep_fry_button, "toggled", G_CALLBACK (on_deep_fry_toggled), self);

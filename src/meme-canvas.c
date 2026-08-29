@@ -7,7 +7,12 @@ void on_mouse_move (GtkEventControllerMotion *controller, double x, double y, Me
     gboolean found;
     double ix, iy, img_w, img_h;
     if (!self->template_image) { gtk_widget_set_cursor (GTK_WIDGET (self->meme_preview), NULL); return; }
-    
+
+    if (gtk_toggle_button_get_active (self->draw_mode_button)) {
+        gtk_widget_set_cursor_from_name (GTK_WIDGET (self->meme_preview), "crosshair");
+        return;
+    }
+
     meme_get_image_coordinates(GTK_WIDGET(self->meme_preview), self->template_image, x, y, &ix, &iy);
     img_w = gdk_pixbuf_get_width(self->template_image);
     img_h = gdk_pixbuf_get_height(self->template_image);
@@ -69,6 +74,18 @@ void on_drag_begin (GtkGestureDrag *gesture, double x, double y, MemeWindow *sel
     meme_get_image_coordinates(GTK_WIDGET(self->meme_preview), self->template_image, x, y, &ix, &iy);
     img_w = gdk_pixbuf_get_width(self->template_image);
     img_h = gdk_pixbuf_get_height(self->template_image);
+
+    if (gtk_toggle_button_get_active (self->draw_mode_button)) {
+        StrokePoint pt;
+        push_undo (self);
+        self->drag_type = DRAG_TYPE_DRAW_STROKE;
+        if (self->draw_points) g_array_free (self->draw_points, TRUE);
+        self->draw_points = g_array_new (FALSE, FALSE, sizeof (StrokePoint));
+        pt.x = CLAMP (ix, 0.0, 1.0);
+        pt.y = CLAMP (iy, 0.0, 1.0);
+        g_array_append_val (self->draw_points, pt);
+        return;
+    }
 
     if (gtk_toggle_button_get_active(self->crop_mode_button)) {
         double ww = gtk_widget_get_width(GTK_WIDGET(self->meme_preview));
@@ -162,17 +179,55 @@ void on_drag_update (GtkGestureDrag *gesture, double offset_x, double offset_y, 
         if (self->selected_layer->type == LAYER_TYPE_TEXT) {
             self->selected_layer->pixbuf = NULL;
         }
+    } else if (self->drag_type == DRAG_TYPE_DRAW_STROKE && self->draw_points) {
+        double start_x, start_y, wx, wy, pix, piy;
+        StrokePoint pt;
+        gtk_gesture_drag_get_start_point (gesture, &start_x, &start_y);
+        wx = start_x + offset_x;
+        wy = start_y + offset_y;
+        meme_get_image_coordinates (GTK_WIDGET (self->meme_preview), self->template_image, wx, wy, &pix, &piy);
+        pt.x = CLAMP (pix, 0.0, 1.0);
+        pt.y = CLAMP (piy, 0.0, 1.0);
+        g_array_append_val (self->draw_points, pt);
     }
 
-    if (self->drag_type == DRAG_TYPE_CROP_MOVE || self->drag_type == DRAG_TYPE_CROP_RESIZE) {
+    if (self->drag_type == DRAG_TYPE_CROP_MOVE || self->drag_type == DRAG_TYPE_CROP_RESIZE ||
+        self->drag_type == DRAG_TYPE_DRAW_STROKE) {
         gtk_widget_queue_draw(GTK_WIDGET(self->crop_overlay_area));
     } else {
         render_meme(self);
     }
 }
 
-void on_drag_end (GtkGestureDrag *g, double x, double y, MemeWindow *self) { 
-    self->drag_type = DRAG_TYPE_NONE; 
+void on_drag_end (GtkGestureDrag *g, double x, double y, MemeWindow *self) {
+    if (self->drag_type == DRAG_TYPE_DRAW_STROKE && self->draw_points) {
+        if (self->draw_points->len > 0 && self->template_image) {
+            int img_w = gdk_pixbuf_get_width (self->template_image);
+            int img_h = gdk_pixbuf_get_height (self->template_image);
+            double cx = 0.5, cy = 0.5, bw = 0, bh = 0;
+            GdkPixbuf *pb = meme_bake_stroke_pixbuf (self->draw_points, img_w, img_h,
+                                                      self->draw_line_width, &self->draw_color,
+                                                      &cx, &cy, &bw, &bh);
+            if (pb) {
+                ImageLayer *new_layer = g_new0 (ImageLayer, 1);
+                new_layer->type = LAYER_TYPE_IMAGE;
+                new_layer->pixbuf = pb;
+                new_layer->width = bw;
+                new_layer->height = bh;
+                new_layer->x = cx;
+                new_layer->y = cy;
+                new_layer->scale = 1.0;
+                new_layer->opacity = 1.0;
+                new_layer->blend_mode = BLEND_NORMAL;
+                self->layers = g_list_append (self->layers, new_layer);
+                self->selected_layer = new_layer;
+                sync_ui_with_layer (self);
+            }
+        }
+        g_array_free (self->draw_points, TRUE);
+        self->draw_points = NULL;
+    }
+    self->drag_type = DRAG_TYPE_NONE;
     render_meme(self);
 }
 

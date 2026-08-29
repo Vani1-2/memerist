@@ -10,8 +10,14 @@ typedef enum {
   DRAG_TYPE_IMAGE_MOVE,
   DRAG_TYPE_IMAGE_RESIZE,
   DRAG_TYPE_CROP_MOVE,
-  DRAG_TYPE_CROP_RESIZE
+  DRAG_TYPE_CROP_RESIZE,
+  DRAG_TYPE_DRAW_STROKE
 } DragType;
+
+typedef struct {
+  double x;
+  double y;
+} StrokePoint;
 
 typedef enum {
   HANDLE_NONE,

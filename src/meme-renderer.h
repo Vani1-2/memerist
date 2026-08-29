@@ -19,3 +19,15 @@ GdkTexture *meme_render_editor_overlay (GdkPixbuf *composite,
 
 void meme_draw_crop_chrome (cairo_t *cr, double w, double h,
                              double abs_x, double abs_y, double abs_w, double abs_h);
+
+GdkPixbuf *meme_bake_stroke_pixbuf (GArray *points, int img_w, int img_h,
+                                     double line_width, const GdkRGBA *color,
+                                     double *out_cx, double *out_cy,
+                                     double *out_w, double *out_h);
+
+// Draws the in-progress stroke directly onto the editor overlay while
+// the user is still dragging, before it's been baked into a layer.
+void meme_draw_stroke_preview (cairo_t *cr, GArray *points,
+                                double img_w, double img_h, double scale,
+                                double off_x, double off_y,
+                                double line_width, const GdkRGBA *color);

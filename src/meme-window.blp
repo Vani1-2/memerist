@@ -191,6 +191,13 @@ template $MemeWindow: Adw.ApplicationWindow {
                 active: bind crop_mode_button.active bidirectional;
               }
 
+              ToggleButton footer_draw_mode_button {
+                icon-name: "paintbrush-symbolic";
+                tooltip-text: _("Draw");
+                sensitive: bind draw_mode_button.sensitive;
+                active: bind draw_mode_button.active bidirectional;
+              }
+
               Button footer_add_text_button {
                 icon-name: "format-text-bold-symbolic";
                 tooltip-text: _("Add Text Layer");
@@ -639,6 +646,12 @@ template $MemeWindow: Adw.ApplicationWindow {
                     sensitive: false;
                   }
 
+                  ToggleButton draw_mode_button {
+                    icon-name: "edit-symbolic";
+                    tooltip-text: _("Draw");
+                    sensitive: false;
+                  }
+
                   Button add_text_button {
                     icon-name: "format-text-bold-symbolic";
                     tooltip-text: _("Add Text Layer");
@@ -998,6 +1011,43 @@ template $MemeWindow: Adw.ApplicationWindow {
                   ]
 
                   clicked => $on_cancel_crop_clicked() swapped;
+                }
+              }
+            }
+
+            Adw.PreferencesGroup draw_group {
+              title: _("Draw");
+              visible: false;
+
+              Adw.ActionRow {
+                title: _("Pen Color");
+
+                [suffix]
+                ColorDialogButton draw_color_btn {
+                  valign: center;
+
+                  dialog: ColorDialog {
+                    with-alpha: true;
+                  };
+                }
+              }
+
+              Adw.ActionRow {
+                title: _("Pen Width");
+
+                [suffix]
+                Scale draw_width_scale {
+                  valign: center;
+                  hexpand: true;
+                  width-request: 150;
+                  draw-value: true;
+
+                  adjustment: Adjustment {
+                    lower: 2;
+                    upper: 40;
+                    value: 8;
+                    step-increment: 1;
+                  };
                 }
               }
             }

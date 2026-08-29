@@ -60,6 +60,7 @@ meme_window_open_file (MemeWindow *self, GFile *file)
         gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->bw_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->crop_mode_button), TRUE);
+        gtk_widget_set_sensitive (GTK_WIDGET (self->draw_mode_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->save_project_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->global_filters_button), TRUE);
         gtk_widget_set_sensitive (GTK_WIDGET (self->zoom_in), TRUE);
@@ -581,6 +582,7 @@ static void on_project_load_contents_finished(GObject *source_object, GAsyncResu
                 gtk_widget_set_sensitive(GTK_WIDGET(self->clear_button), TRUE);
                 gtk_widget_set_sensitive(GTK_WIDGET(self->add_image_button), TRUE);
                 gtk_widget_set_sensitive(GTK_WIDGET(self->crop_mode_button), TRUE);
+                gtk_widget_set_sensitive(GTK_WIDGET(self->draw_mode_button), TRUE);
                 gtk_widget_set_sensitive(GTK_WIDGET(self->save_project_button), TRUE);
                 gtk_widget_set_sensitive(GTK_WIDGET(self->global_filters_button), TRUE);
                 gtk_widget_set_sensitive(GTK_WIDGET(self->bw_button), TRUE);

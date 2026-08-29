@@ -14,6 +14,7 @@ struct _MemeWindow {
     AdwPreferencesGroup *layer_group;
     AdwActionRow *open_template_row;
     AdwPreferencesGroup *transform_group;
+    AdwPreferencesGroup *draw_group;
     AdwOverlaySplitView *split_view;
     AdwToastOverlay *copy_clip_feedback;
     GtkStack *content_stack;
@@ -34,7 +35,7 @@ struct _MemeWindow {
     GtkButton *select_mode_button;
     GtkButton *restore_templates_button;
     gboolean template_select_mode;
-    GtkToggleButton *deep_fry_button, *cinematic_button, *crop_mode_button, *bw_button;
+    GtkToggleButton *deep_fry_button, *cinematic_button, *crop_mode_button, *bw_button, *draw_mode_button;
     GtkFlowBox *template_gallery;
     GtkStack *template_content_stack;
     AdwDialog *template_window;
@@ -52,6 +53,8 @@ struct _MemeWindow {
     DragType drag_type;
     GtkWidget *text_color_btn;
     GtkWidget *stroke_color_btn;
+    GtkWidget *draw_color_btn;
+    GtkScale *draw_width_scale;
     
     GtkGestureDrag *drag_gesture;
     ResizeHandle active_crop_handle;    
@@ -60,6 +63,10 @@ struct _MemeWindow {
     double zoom_level;
     double crop_x, crop_y, crop_w, crop_h;
     GdkPixbuf *crop_session_template_snapshot;
+
+    GArray *draw_points;
+    GdkRGBA draw_color;
+    double draw_line_width;
 
     gboolean  template_is_gif;
     gchar    *template_gif_path;
@@ -72,7 +79,7 @@ struct _MemeWindow {
     GtkButton *footer_add_image_button, *footer_add_text_button;
     GtkButton *footer_copy_clipboard_button, *footer_delete_layer_button;
     GtkButton *footer_zoom_in, *footer_zoom_out, *footer_clear_button;
-    GtkToggleButton *footer_crop_mode_button, *footer_cinematic_button, *footer_deep_fry_button, *footer_bw_button;
+    GtkToggleButton *footer_crop_mode_button, *footer_cinematic_button, *footer_deep_fry_button, *footer_bw_button, *footer_draw_mode_button;
     GtkMenuButton *footer_global_filters_button;
     GtkButton *footer_rotate_left_button;
     GtkButton *footer_rotate_right_button;

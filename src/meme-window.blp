@@ -192,7 +192,7 @@ template $MemeWindow: Adw.ApplicationWindow {
               }
 
               ToggleButton footer_draw_mode_button {
-                icon-name: "paintbrush-symbolic";
+                icon-name: "document-edit-symbolic";
                 tooltip-text: _("Draw");
                 sensitive: bind draw_mode_button.sensitive;
                 active: bind draw_mode_button.active bidirectional;
@@ -647,7 +647,7 @@ template $MemeWindow: Adw.ApplicationWindow {
                   }
 
                   ToggleButton draw_mode_button {
-                    icon-name: "edit-symbolic";
+                    icon-name: "document-edit-symbolic";
                     tooltip-text: _("Draw");
                     sensitive: false;
                   }
@@ -1035,13 +1035,10 @@ template $MemeWindow: Adw.ApplicationWindow {
               Adw.ActionRow {
                 title: _("Pen Width");
 
-                [suffix]
-                Scale draw_width_scale {
+                SpinButton draw_width_scale {
                   valign: center;
-                  hexpand: true;
-                  width-request: 150;
-                  draw-value: true;
-
+                  climb-rate: 1;
+                  digits: 0;
                   adjustment: Adjustment {
                     lower: 2;
                     upper: 40;

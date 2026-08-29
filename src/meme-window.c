@@ -289,8 +289,8 @@ static void on_draw_color_changed (GObject *object, GParamSpec *pspec, MemeWindo
     if (c) self->draw_color = *c;
 }
 
-static void on_draw_width_changed (GtkRange *range, MemeWindow *self) {
-    self->draw_line_width = gtk_range_get_value (range);
+static void on_draw_width_changed (MemeWindow *self) {
+    self->draw_line_width = gtk_spin_button_get_value (self->draw_width_scale);
 }
 
 static void on_cancel_crop_clicked (MemeWindow *self) {
@@ -1113,7 +1113,7 @@ static void meme_window_init (MemeWindow *self) {
     g_signal_connect (self->crop_mode_button, "toggled", G_CALLBACK (on_crop_mode_toggled), self);
     g_signal_connect (self->draw_mode_button, "toggled", G_CALLBACK (on_draw_mode_toggled), self);
     g_signal_connect (self->draw_color_btn, "notify::rgba", G_CALLBACK (on_draw_color_changed), self);
-    g_signal_connect (self->draw_width_scale, "value-changed", G_CALLBACK (on_draw_width_changed), self);
+    g_signal_connect_swapped (self->draw_width_scale, "value-changed", G_CALLBACK (on_draw_width_changed), self);
     
     g_signal_connect_swapped (self->add_text_button, "clicked", G_CALLBACK (on_add_text_clicked), self);
     g_signal_connect (self->font_choose_btn, "notify::font-desc", G_CALLBACK (on_font_changed), self);

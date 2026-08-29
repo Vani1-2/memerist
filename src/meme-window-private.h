@@ -54,7 +54,7 @@ struct _MemeWindow {
     GtkWidget *text_color_btn;
     GtkWidget *stroke_color_btn;
     GtkWidget *draw_color_btn;
-    GtkScale *draw_width_scale;
+    GtkSpinButton *draw_width_scale;
     
     GtkGestureDrag *drag_gesture;
     ResizeHandle active_crop_handle;    

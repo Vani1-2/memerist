@@ -532,6 +532,22 @@ static void add_file_to_gallery (MemeWindow *self, const char *full_path) {
     if (g_str_has_prefix (full_path, "resource://")) {
         picture = gtk_picture_new_for_resource (full_path + 11);
         *mtime = 0; // Built-in resources are technically the "oldest"
+    } else if (g_str_has_suffix (full_path, ".gif")) {
+        GStatBuf stat_buf;
+        GdkPixbuf *frame = gdk_pixbuf_new_from_file (full_path, NULL);
+
+        if (frame) {
+            GdkTexture *texture = gdk_texture_new_for_pixbuf (frame);
+            picture = gtk_picture_new_for_paintable (GDK_PAINTABLE (texture));
+            g_object_unref (texture);
+            g_object_unref (frame);
+        } else {
+            picture = gtk_picture_new ();
+        }
+
+        if (g_stat (full_path, &stat_buf) == 0) {
+            *mtime = stat_buf.st_mtime;
+        }
     } else {
         GStatBuf stat_buf;
         picture = gtk_picture_new_for_filename (full_path);
@@ -579,7 +595,7 @@ static void on_templates_enumerated (GObject *source_object, GAsyncResult *res, 
         GFileInfo *info = G_FILE_INFO (l->data);
         const char *name = g_file_info_get_name (info);
         
-        if (g_str_has_suffix (name, ".png") || g_str_has_suffix (name, ".jpg") || g_str_has_suffix (name, ".jpeg")) {
+        if (g_str_has_suffix (name, ".png") || g_str_has_suffix (name, ".jpg") || g_str_has_suffix (name, ".jpeg") || g_str_has_suffix (name, ".gif")) {
             GFile *child = g_file_enumerator_get_child (enumerator, info);
             char *full_path = g_file_get_path (child);
             add_file_to_gallery (self, full_path);

@@ -49,10 +49,12 @@ $(REL)/build.ninja:
 	meson setup --buildtype=release $(REL)
 
 run: all
-	./$(BUILD)/src/$(PROJECT) $(ARGS)
+	dconf reset -f /io/github/vani_tty1/memerist/
+	meson devenv -C $(BUILD) ./src/$(PROJECT) $(ARGS)
 
 run-release: release
-	./$(REL)/src/$(PROJECT) $(ARGS)
+	dconf reset -f /io/github/vani_tty1/memerist/
+	meson devenv -C $(REL) ./src/$(PROJECT) $(ARGS)
 
 test: all
 	meson test -v -C $(BUILD)

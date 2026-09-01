@@ -1,4 +1,4 @@
-/* myapp-window.c
+/* meme-window.c
  *
  * Copyright 2025 Giovanni
  *
@@ -228,10 +228,11 @@ static void on_crop_preset_clicked (GtkWidget *btn, MemeWindow *self) {
 
 static void update_footer_pages (MemeWindow *self) {
     gboolean crop_active = gtk_toggle_button_get_active (self->crop_mode_button);
+    gboolean draw_active = gtk_toggle_button_get_active (self->draw_mode_button);
     gboolean is_text = (self->selected_layer != NULL && self->selected_layer->type == LAYER_TYPE_TEXT);
 
-    gtk_widget_set_visible (GTK_WIDGET (self->footer_tools_page), !crop_active && !is_text);
-    gtk_widget_set_visible (GTK_WIDGET (self->footer_text_page), !crop_active && is_text);
+    gtk_widget_set_visible (GTK_WIDGET (self->footer_tools_page), !crop_active && !draw_active && !is_text);
+    gtk_widget_set_visible (GTK_WIDGET (self->footer_text_page), !crop_active && !draw_active && is_text);
 }
 
 static void on_exit_text_editing_clicked (MemeWindow *self) {
@@ -281,7 +282,12 @@ static void on_draw_mode_toggled (GtkToggleButton *btn, MemeWindow *self) {
     } else {
         gtk_widget_set_cursor (GTK_WIDGET (self->meme_preview), NULL);
     }
+    update_footer_pages (self);
     render_meme (self);
+}
+
+static void on_exit_draw_editing_clicked (MemeWindow *self) {
+    gtk_toggle_button_set_active (self->draw_mode_button, FALSE);
 }
 
 static void on_draw_color_changed (GObject *object, GParamSpec *pspec, MemeWindow *self) {
@@ -1069,6 +1075,10 @@ static void meme_window_class_init (MemeWindowClass *klass) {
 
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_tools_page);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_transform_page);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_draw_page);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_draw_color_btn);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_draw_width_scale);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_exit_draw_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_text_page);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_font_choose_btn);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_text_color_btn);
@@ -1200,6 +1210,7 @@ static void meme_window_init (MemeWindow *self) {
 
     g_signal_connect_swapped (self->footer_text_delete_button, "clicked", G_CALLBACK (on_delete_layer_clicked), self);
     g_signal_connect_swapped (self->footer_exit_text_button, "clicked", G_CALLBACK (on_exit_text_editing_clicked), self);
+    g_signal_connect_swapped (self->footer_exit_draw_button, "clicked", G_CALLBACK (on_exit_draw_editing_clicked), self);
     g_signal_connect (self->bw_button, "toggled", G_CALLBACK (on_deep_fry_toggled), self);
     g_signal_connect (self->footer_bw_button, "toggled", G_CALLBACK (on_deep_fry_toggled), self);
     populate_template_gallery (self);

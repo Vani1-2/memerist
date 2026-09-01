@@ -380,6 +380,56 @@ template $MemeWindow: Adw.ApplicationWindow {
             }
           }
 
+          Box footer_draw_page {
+            orientation: vertical;
+            halign: center;
+            spacing: 6;
+            visible: bind draw_mode_button.active;
+
+            Box {
+              orientation: horizontal;
+              halign: center;
+              spacing: 6;
+              styles [ "toolbar" ]
+
+              ColorDialogButton footer_draw_color_btn {
+                valign: center;
+                tooltip-text: _("Pen Color");
+
+                dialog: ColorDialog {
+                  with-alpha: true;
+                };
+
+                rgba: bind draw_color_btn.rgba bidirectional;
+              }
+
+              SpinButton footer_draw_width_scale {
+                valign: center;
+                tooltip-text: _("Pen Width");
+                climb-rate: 1;
+                digits: 0;
+
+                adjustment: Adjustment {
+                  lower: 2;
+                  upper: 40;
+                  step-increment: 1;
+                };
+
+                value: bind draw_width_scale.value bidirectional;
+              }
+
+              Separator {
+                orientation: horizontal;
+              }
+
+              Button footer_exit_draw_button {
+                icon-name: "object-select-symbolic";
+                tooltip-text: _("Done");
+                styles ["suggested-action"]
+              }
+            }
+          }
+
           Box footer_text_page {
             orientation: vertical;
             halign: center;

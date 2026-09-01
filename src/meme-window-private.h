@@ -91,6 +91,10 @@ struct _MemeWindow {
 
     GtkBox *footer_tools_page;
     GtkBox *footer_transform_page;
+    GtkBox *footer_draw_page;
+    GtkWidget *footer_draw_color_btn;
+    GtkSpinButton *footer_draw_width_scale;
+    GtkButton *footer_exit_draw_button;
     GtkBox *footer_text_page;
     GtkFontDialogButton *footer_font_choose_btn;
     GtkWidget *footer_text_color_btn;

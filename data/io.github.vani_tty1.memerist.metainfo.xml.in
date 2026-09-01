@@ -88,6 +88,20 @@
 
 	<releases>
 
+	    <release version="2.1.0" date="2026-09-1">
+			<url type="details">https://github.com/vani-tty1/memerist/releases/latest/</url>
+			<description>
+			  <p>
+			    This is a stable release with the following changes:
+			  </p>
+				<ul>
+				    <li>New Freehand drawing tool</li>
+				    <li>GIF's can now be imported in templates</li>
+				    <li>Minor UI Adjustments</li>
+				</ul>
+			</description>
+		  </release>
+
 	    <release version="2.0.0" date="2026-08-9">
 			<url type="details">https://github.com/vani-tty1/memerist/releases/latest/</url>
 			<description>

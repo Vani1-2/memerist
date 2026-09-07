@@ -60,6 +60,7 @@ typedef struct {
   BlendMode blend_mode;
   GdkRGBA text_color;
   GdkRGBA stroke_color;
+  gboolean is_annotation;
 } ImageLayer;
 
 

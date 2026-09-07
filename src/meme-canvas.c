@@ -107,12 +107,18 @@ void on_drag_begin (GtkGestureDrag *gesture, double x, double y, MemeWindow *sel
 
     for (l = g_list_last(self->layers); l != NULL; l = l->prev) {
         ImageLayer *layer = (ImageLayer *)l->data;
-        double hw = (layer->width * layer->scale) / (2.0 * img_w);
-        double hh = (layer->height * layer->scale) / (2.0 * img_h);
-        double l_left = layer->x - hw, l_right = layer->x + hw;
-        double l_top = layer->y - hh, l_bot = layer->y + hh;
-        double cx = 20.0 / img_w;
-        gboolean corner = (fabs(ix - l_left) < cx || fabs(ix - l_right) < cx) && (fabs(iy - l_top) < cx || fabs(iy - l_bot) < cx);
+        double hw, hh, l_left, l_right, l_top, l_bot, cx;
+        gboolean corner;
+
+        if (layer->is_annotation)
+            continue;
+
+        hw = (layer->width * layer->scale) / (2.0 * img_w);
+        hh = (layer->height * layer->scale) / (2.0 * img_h);
+        l_left = layer->x - hw; l_right = layer->x + hw;
+        l_top = layer->y - hh; l_bot = layer->y + hh;
+        cx = 20.0 / img_w;
+        corner = (fabs(ix - l_left) < cx || fabs(ix - l_right) < cx) && (fabs(iy - l_top) < cx || fabs(iy - l_bot) < cx);
 
         if (layer == self->selected_layer && corner) {
             push_undo(self);
@@ -219,8 +225,8 @@ void on_drag_end (GtkGestureDrag *g, double x, double y, MemeWindow *self) {
                 new_layer->scale = 1.0;
                 new_layer->opacity = 1.0;
                 new_layer->blend_mode = BLEND_NORMAL;
+                new_layer->is_annotation = TRUE;
                 self->layers = g_list_append (self->layers, new_layer);
-                self->selected_layer = new_layer;
                 sync_ui_with_layer (self);
             }
         }

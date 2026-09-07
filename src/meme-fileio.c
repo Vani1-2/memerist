@@ -507,6 +507,7 @@ static void on_save_project_response (GObject *s, GAsyncResult *r, gpointer d) {
         g_key_file_set_double  (keyfile, group, "rotation",   layer->rotation);
         g_key_file_set_double  (keyfile, group, "opacity",    layer->opacity);
         g_key_file_set_integer (keyfile, group, "blend_mode", layer->blend_mode);
+        g_key_file_set_boolean (keyfile, group, "is_annotation", layer->is_annotation);
 
         if (layer->type == LAYER_TYPE_TEXT && layer->text) {
             g_key_file_set_string (keyfile, group, "text",      layer->text);
@@ -584,6 +585,7 @@ static void on_project_load_contents_finished(GObject *source_object, GAsyncResu
                 layer->rotation = g_key_file_get_double(keyfile, group, "rotation", NULL);
                 layer->opacity = g_key_file_get_double(keyfile, group, "opacity", NULL);
                 layer->blend_mode = g_key_file_get_integer(keyfile, group, "blend_mode", NULL);
+                layer->is_annotation = g_key_file_get_boolean(keyfile, group, "is_annotation", NULL);
 
                 if(layer->type == LAYER_TYPE_TEXT){
                     layer->text = g_key_file_get_string(keyfile,group, "text", NULL);

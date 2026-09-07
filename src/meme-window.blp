@@ -84,26 +84,6 @@ template $MemeWindow: Adw.ApplicationWindow {
             tooltip-text: _("Toggle Sidebar (F9)");
             action-name: "win.toggle-sidebar";
           }
-
-          [start]
-          Box {
-            orientation: horizontal;
-            styles ["linked"]
-
-            Button undo_button {
-              icon-name: "edit-undo-symbolic";
-              tooltip-text: _("Undo (Ctrl+Z)");
-              sensitive: false;
-            }
-
-            Button redo_button {
-              icon-name: "edit-redo-symbolic";
-              tooltip-text: _("Redo (Ctrl+Y)");
-              sensitive: false;
-            }
-          }
-
-
           [start]
           MenuButton {
               icon-name: "document-open-symbolic";
@@ -805,7 +785,18 @@ template $MemeWindow: Adw.ApplicationWindow {
                   orientation: horizontal;
                   halign: center;
                   spacing: 6;
-                  styles [ "toolbar" ]
+                  styles["toolbar",]
+                  Button undo_button {
+                    icon-name: "edit-undo-symbolic";
+                    tooltip-text: _("Undo (Ctrl+Z)");
+                    sensitive: false;
+                  }
+
+                  Button redo_button {
+                    icon-name: "edit-redo-symbolic";
+                    tooltip-text: _("Redo (Ctrl+Y)");
+                    sensitive: false;
+                  }
 
                   Button zoom_in {
                     icon-name: "zoom-in-symbolic";
@@ -817,10 +808,6 @@ template $MemeWindow: Adw.ApplicationWindow {
                     icon-name: "zoom-out-symbolic";
                     tooltip-text: _("Zoom Out");
                     sensitive: false;
-                  }
-
-                  Separator {
-                    orientation: horizontal;
                   }
 
                   Button clear_button {

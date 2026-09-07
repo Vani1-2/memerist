@@ -57,6 +57,9 @@ template $MemeWindow: Adw.ApplicationWindow {
       content_box.margin-bottom: 5;
       pill_btn_select_template.visible: true;
       sidebar_toolbar_group.visible: false;
+      undo_button.visible: false;
+      redo_button.visible: false;
+      sidebar_toggle.visible: false;
     }
   }
 
@@ -80,6 +83,24 @@ template $MemeWindow: Adw.ApplicationWindow {
             icon-name: "sidebar-show-symbolic";
             tooltip-text: _("Toggle Sidebar (F9)");
             action-name: "win.toggle-sidebar";
+          }
+
+          [start]
+          Box {
+            orientation: horizontal;
+            styles ["linked"]
+
+            Button undo_button {
+              icon-name: "edit-undo-symbolic";
+              tooltip-text: _("Undo (Ctrl+Z)");
+              sensitive: false;
+            }
+
+            Button redo_button {
+              icon-name: "edit-redo-symbolic";
+              tooltip-text: _("Redo (Ctrl+Y)");
+              sensitive: false;
+            }
           }
 
 
@@ -273,6 +294,17 @@ template $MemeWindow: Adw.ApplicationWindow {
               spacing: 6;
               styles [ "toolbar" ]
 
+              Button footer_undo_button {
+                icon-name: "edit-undo-symbolic";
+                tooltip-text: _("Undo (Ctrl+Z)");
+                sensitive: false;
+              }
+
+              Button footer_redo_button {
+                icon-name: "edit-redo-symbolic";
+                tooltip-text: _("Redo (Ctrl+Y)");
+                sensitive: false;
+              }
               Button footer_zoom_in {
                 icon-name: "zoom-in-symbolic";
                 tooltip-text: _("Zoom In");
@@ -446,6 +478,7 @@ template $MemeWindow: Adw.ApplicationWindow {
                 width-request: 280;
 
                 TextView footer_layer_text_view {
+                  styles ["inline",]
                   wrap-mode: word_char;
                   left-margin: 8;
                   right-margin: 8;
@@ -819,6 +852,7 @@ template $MemeWindow: Adw.ApplicationWindow {
                     height-request: 100;
 
                     TextView layer_text_view {
+                      styles ["inline",]
                       wrap-mode: word_char;
                       left-margin: 12;
                       right-margin: 12;

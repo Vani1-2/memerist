@@ -244,6 +244,20 @@ void free_history_stack (GList **stack) {
     *stack = NULL;
 }
 
+void update_undo_redo_sensitivity (MemeWindow *self) {
+    gboolean can_undo = self->undo_stack != NULL;
+    gboolean can_redo = self->redo_stack != NULL;
+
+    if (self->undo_button)
+        gtk_widget_set_sensitive (GTK_WIDGET (self->undo_button), can_undo);
+    if (self->redo_button)
+        gtk_widget_set_sensitive (GTK_WIDGET (self->redo_button), can_redo);
+    if (self->footer_undo_button)
+        gtk_widget_set_sensitive (GTK_WIDGET (self->footer_undo_button), can_undo);
+    if (self->footer_redo_button)
+        gtk_widget_set_sensitive (GTK_WIDGET (self->footer_redo_button), can_redo);
+}
+
 void push_undo (MemeWindow *self) {
     free_history_stack (&self->redo_stack);
     if (g_list_length (self->undo_stack) >= 20) {
@@ -252,6 +266,7 @@ void push_undo (MemeWindow *self) {
         self->undo_stack = g_list_delete_link (self->undo_stack, last);
     }
     self->undo_stack = g_list_prepend (self->undo_stack, meme_layer_list_copy (self->layers));
+    update_undo_redo_sensitivity (self);
 }
 
 void myapp_window_perform_undo(MemeWindow *self) {
@@ -262,6 +277,7 @@ void myapp_window_perform_undo(MemeWindow *self) {
     self->selected_layer = NULL;
     sync_ui_with_layer (self);
     render_meme (self);
+    update_undo_redo_sensitivity (self);
 }
 
 void myapp_window_perform_redo (MemeWindow *self) {
@@ -272,4 +288,5 @@ void myapp_window_perform_redo (MemeWindow *self) {
     self->selected_layer = NULL;
     sync_ui_with_layer (self);
     render_meme (self);
+    update_undo_redo_sensitivity (self);
 }

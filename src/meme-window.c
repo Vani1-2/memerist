@@ -446,6 +446,7 @@ void on_clear_clicked (MemeWindow *self) {
     g_clear_object (&self->crop_session_template_snapshot);
     if (self->layers) { meme_layer_list_free (self->layers); self->layers = NULL; }
     free_history_stack (&self->undo_stack); free_history_stack (&self->redo_stack);
+    update_undo_redo_sensitivity (self);
     self->selected_layer = NULL;
     sync_ui_with_layer(self);
     gtk_picture_set_paintable (self->meme_preview, NULL);
@@ -1031,6 +1032,8 @@ static void meme_window_class_init (MemeWindowClass *klass) {
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, layer_text_view);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, layer_font_size);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, layer_font_size_row);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, undo_button);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, redo_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, export_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, load_image_button);
     gtk_widget_class_bind_template_child(widget_class, MemeWindow, pill_btn_open_image);
@@ -1102,6 +1105,8 @@ static void meme_window_class_init (MemeWindowClass *klass) {
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_text_delete_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_exit_text_button);
     gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_bw_button);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_undo_button);
+    gtk_widget_class_bind_template_child (widget_class, MemeWindow, footer_redo_button);
     gtk_widget_class_install_action (widget_class, "win.toggle-sidebar", NULL,
                                       meme_window_toggle_sidebar);
     gtk_widget_class_add_binding_action (widget_class, GDK_KEY_F9, 0,
@@ -1148,6 +1153,8 @@ static void meme_window_init (MemeWindow *self) {
     g_signal_connect_swapped (self->pill_btn_open_image, "clicked", G_CALLBACK(on_load_image_clicked), self);
     g_signal_connect_swapped (self->clear_button, "clicked", G_CALLBACK (on_clear_clicked), self);
     g_signal_connect_swapped (self->add_image_button, "clicked", G_CALLBACK (on_add_image_clicked), self);
+    g_signal_connect_swapped (self->undo_button, "clicked", G_CALLBACK (myapp_window_perform_undo), self);
+    g_signal_connect_swapped (self->redo_button, "clicked", G_CALLBACK (myapp_window_perform_redo), self);
     g_signal_connect_swapped (self->export_button, "clicked", G_CALLBACK (on_export_clicked), self);
     g_signal_connect_swapped (self->save_project_button, "clicked", G_CALLBACK (myapp_window_save_project), self);
     g_signal_connect_swapped (self->load_project_button, "clicked", G_CALLBACK (on_load_project_clicked), self);
@@ -1201,6 +1208,8 @@ static void meme_window_init (MemeWindow *self) {
     g_signal_connect_swapped (self->zoom_out, "clicked", G_CALLBACK (on_zoom_out_clicked), self);
 
 
+    g_signal_connect_swapped (self->footer_undo_button, "clicked", G_CALLBACK (myapp_window_perform_undo), self);
+    g_signal_connect_swapped (self->footer_redo_button, "clicked", G_CALLBACK (myapp_window_perform_redo), self);
     g_signal_connect_swapped (self->footer_add_image_button, "clicked", G_CALLBACK (on_add_image_clicked), self);
     g_signal_connect (self->footer_crop_mode_button, "toggled", G_CALLBACK (on_crop_mode_toggled), self);
     g_signal_connect (self->footer_draw_mode_button, "toggled", G_CALLBACK (on_draw_mode_toggled), self);

@@ -29,6 +29,7 @@ struct _MemeWindow {
     GtkSpinButton *layer_font_size;
     GtkMenuButton *main_menu_button;    
     GtkButton *export_button, *copy_clipboard_button, *zoom_in, *zoom_out;
+    GtkButton *undo_button, *redo_button;
     GtkButton *load_image_button, *pill_btn_open_image, *clear_button, *add_image_button;
     GtkButton *import_template_button, *delete_template_button;
     GtkButton *select_all_button;
@@ -104,6 +105,7 @@ struct _MemeWindow {
     GtkSpinButton *footer_layer_font_size;
     GtkButton *footer_text_delete_button;
     GtkButton *footer_exit_text_button;
+    GtkButton *footer_undo_button, *footer_redo_button;
 };
 
 void sync_ui_with_layer(MemeWindow *self);
@@ -111,6 +113,7 @@ void render_meme(MemeWindow *self);
 void on_clear_clicked(MemeWindow *self);
 void apply_zoom(MemeWindow *self);
 void update_template_image(MemeWindow *self, GdkPixbuf *new_pixbuf);
+void update_undo_redo_sensitivity(MemeWindow *self);
 
 GArray  *meme_gif_decode_frames (const char *path);
 void     meme_gif_frames_free (GArray *frames);

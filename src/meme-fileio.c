@@ -28,6 +28,7 @@ static void gif_export_data_free(gpointer data) {
 void
 meme_window_open_file (MemeWindow *self, GFile *file)
 {
+    GError *error = NULL;
     char *path = g_file_get_path (file);
     if (!path)
         return;
@@ -40,7 +41,20 @@ meme_window_open_file (MemeWindow *self, GFile *file)
         self->template_is_gif = FALSE;
     }
 
-    self->template_image = gdk_pixbuf_new_from_file (path, NULL);
+    self->template_image = gdk_pixbuf_new_from_file (path, &error);
+
+    if (!self->template_image) {
+        char *err_msg = g_strdup_printf ("Couldn't open image: %s",
+                                          error ? error->message : "unknown error");
+        AdwToast *toast = adw_toast_new (err_msg);
+        adw_toast_overlay_add_toast (self->copy_clip_feedback, toast);
+        g_free (err_msg);
+        g_clear_error (&error);
+        g_clear_pointer (&self->template_gif_path, g_free);
+        self->template_is_gif = FALSE;
+        g_free (path);
+        return;
+    }
 
     if (self->layers) {
         meme_layer_list_free (self->layers);
@@ -298,7 +312,17 @@ static void export_gif_thread(GTask *task, gpointer source_object, gpointer task
 
     MagickWandGenesis();
     source_wand = NewMagickWand();
-    MagickReadImage(source_wand, ctx->source_path);
+    if (MagickReadImage(source_wand, ctx->source_path) != MagickTrue) {
+        ExceptionType severity;
+        char *desc = MagickGetException(source_wand, &severity);
+        g_task_return_new_error(task, G_IO_ERROR, G_IO_ERROR_FAILED,
+                                 "Failed to read source image: %s",
+                                 desc ? desc : "unknown error");
+        if (desc) MagickRelinquishMemory(desc);
+        DestroyMagickWand(source_wand);
+        MagickWandTerminus();
+        return;
+    }
     coalesced = MagickCoalesceImages(source_wand);
     DestroyMagickWand(source_wand);
 

@@ -109,10 +109,9 @@ static void on_color_changed (GObject *object, GParamSpec *pspec, MemeWindow *se
         
         if (tc) self->selected_layer->text_color = *tc;
         if (sc) self->selected_layer->stroke_color = *sc;
-        
-        render_meme(self);
+
         g_clear_object(&self->selected_layer->pixbuf);
-        self->selected_layer->pixbuf = NULL;
+        render_meme(self);
     }
 }
 
@@ -130,9 +129,9 @@ static void on_layer_text_changed (MemeWindow *self) {
         
         self->selected_layer->text = gtk_text_buffer_get_text (buffer, &start, &end, FALSE);
         self->selected_layer->font_size = gtk_spin_button_get_value (self->layer_font_size);
-        render_meme (self);
+
         g_clear_object(&self->selected_layer->pixbuf);
-        self->selected_layer->pixbuf = NULL;
+        render_meme (self);
     }
 }
 
@@ -366,8 +365,6 @@ void sync_ui_with_layer(MemeWindow *self) {
     gboolean sensitive = (self->selected_layer != NULL);
     gboolean is_text = (sensitive && self->selected_layer->type == LAYER_TYPE_TEXT);
     gboolean is_crop = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->crop_mode_button));    
-    g_signal_handlers_block_by_func(self->layer_opacity_scale, on_text_changed, self);
-
     g_signal_handlers_block_by_func(self->layer_opacity_scale, on_text_changed, self);
     g_signal_handlers_block_by_func(self->layer_rotation_scale, on_text_changed, self);
     buffer = gtk_text_view_get_buffer (self->layer_text_view);

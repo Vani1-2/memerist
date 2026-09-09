@@ -1113,6 +1113,36 @@ static void meme_window_class_init (MemeWindowClass *klass) {
                                           "win.toggle-sidebar", NULL);
 }
 
+static gboolean
+on_window_drop (GtkDropTarget *target, const GValue *value,
+                 double x, double y, MemeWindow *self)
+{
+    if (G_VALUE_HOLDS (value, GDK_TYPE_FILE_LIST)) {
+        GdkFileList *file_list = g_value_get_boxed (value);
+        GSList *files = gdk_file_list_get_files (file_list);
+        gboolean handled = FALSE;
+
+        if (files) {
+            meme_window_open_file (self, G_FILE (files->data));
+            handled = TRUE;
+        } else {
+            adw_toast_overlay_add_toast (self->copy_clip_feedback,
+                                          adw_toast_new ("Couldn't read the dropped item"));
+        }
+        g_slist_free (files);
+        return handled;
+    }
+
+    if (G_VALUE_HOLDS (value, GDK_TYPE_TEXTURE)) {
+        meme_window_open_texture (self, GDK_TEXTURE (g_value_get_object (value)));
+        return TRUE;
+    }
+
+    adw_toast_overlay_add_toast (self->copy_clip_feedback,
+                                  adw_toast_new ("That doesn't look like an image"));
+    return FALSE;
+}
+
 static void meme_window_init (MemeWindow *self) {
     GtkEventController *scroll;
     GtkEventController *key_controller;
@@ -1202,6 +1232,14 @@ static void meme_window_init (MemeWindow *self) {
     g_signal_connect (self->drag_gesture, "drag-begin", G_CALLBACK (on_drag_begin), self);
     g_signal_connect (self->drag_gesture, "drag-update", G_CALLBACK (on_drag_update), self);
     g_signal_connect (self->drag_gesture, "drag-end", G_CALLBACK (on_drag_end), self);
+
+    {
+        GtkDropTarget *drop_target = gtk_drop_target_new (G_TYPE_INVALID, GDK_ACTION_COPY);
+        GType drop_types[] = { GDK_TYPE_FILE_LIST, GDK_TYPE_TEXTURE };
+        gtk_drop_target_set_gtypes (drop_target, drop_types, G_N_ELEMENTS (drop_types));
+        g_signal_connect (drop_target, "drop", G_CALLBACK (on_window_drop), self);
+        gtk_widget_add_controller (GTK_WIDGET (self), GTK_EVENT_CONTROLLER (drop_target));
+    }
     
     self->zoom_level = 1.0;
     g_signal_connect_swapped (self->zoom_in, "clicked", G_CALLBACK (on_zoom_in_clicked), self);

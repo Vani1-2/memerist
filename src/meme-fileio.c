@@ -25,36 +25,17 @@ static void gif_export_data_free(gpointer data) {
     g_free(ctx);
 }
 
-void
-meme_window_open_file (MemeWindow *self, GFile *file)
+static void
+meme_window_load_pixbuf (MemeWindow *self, GdkPixbuf *pixbuf,
+                          gboolean is_gif, const char *gif_path)
 {
-    GError *error = NULL;
-    char *path = g_file_get_path (file);
-    if (!path)
-        return;
-
     g_clear_pointer (&self->template_gif_path, g_free);
-    if (g_str_has_suffix (path, ".gif")) {
-        self->template_is_gif = TRUE;
-        self->template_gif_path = g_strdup (path);
-    } else {
-        self->template_is_gif = FALSE;
-    }
+    self->template_is_gif = is_gif;
+    if (is_gif)
+        self->template_gif_path = g_strdup (gif_path);
 
-    self->template_image = gdk_pixbuf_new_from_file (path, &error);
-
-    if (!self->template_image) {
-        char *err_msg = g_strdup_printf ("Couldn't open image: %s",
-                                          error ? error->message : "unknown error");
-        AdwToast *toast = adw_toast_new (err_msg);
-        adw_toast_overlay_add_toast (self->copy_clip_feedback, toast);
-        g_free (err_msg);
-        g_clear_error (&error);
-        g_clear_pointer (&self->template_gif_path, g_free);
-        self->template_is_gif = FALSE;
-        g_free (path);
-        return;
-    }
+    g_clear_object (&self->template_image);
+    self->template_image = pixbuf;
 
     if (self->layers) {
         meme_layer_list_free (self->layers);
@@ -64,29 +45,93 @@ meme_window_open_file (MemeWindow *self, GFile *file)
     free_history_stack (&self->undo_stack);
     free_history_stack (&self->redo_stack);
 
-    if (self->template_image) {
-        gtk_stack_set_visible_child_name (self->content_stack, "content");
-        gtk_widget_set_sensitive (GTK_WIDGET (self->add_text_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->export_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->deep_fry_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->bw_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->crop_mode_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->draw_mode_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->save_project_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->global_filters_button), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->zoom_in), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->zoom_out), TRUE);
-        gtk_widget_set_sensitive (GTK_WIDGET (self->copy_clipboard_button), TRUE);
-        self->zoom_level = 1.0;
-        apply_zoom (self);
-        render_meme (self);
-        meme_window_start_gif_animation (self);
+    gtk_stack_set_visible_child_name (self->content_stack, "content");
+    gtk_widget_set_sensitive (GTK_WIDGET (self->add_text_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->export_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->clear_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->add_image_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->deep_fry_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->cinematic_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->bw_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->crop_mode_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->draw_mode_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->save_project_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->global_filters_button), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->zoom_in), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->zoom_out), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->copy_clipboard_button), TRUE);
+    self->zoom_level = 1.0;
+    apply_zoom (self);
+    render_meme (self);
+    meme_window_start_gif_animation (self);
+}
+
+void
+meme_window_open_file (MemeWindow *self, GFile *file)
+{
+    GError *error = NULL;
+    gboolean is_gif;
+    GdkPixbuf *pixbuf;
+    char *path = g_file_get_path (file);
+    if (!path) {
+        adw_toast_overlay_add_toast (self->copy_clip_feedback,
+                                      adw_toast_new ("Couldn't open that item, try saving the image locally first"));
+        return;
     }
 
+    is_gif = g_str_has_suffix (path, ".gif");
+    pixbuf = gdk_pixbuf_new_from_file (path, &error);
+
+    if (!pixbuf) {
+        char *err_msg = g_strdup_printf ("Couldn't open image: %s",
+                                          error ? error->message : "unknown error");
+        AdwToast *toast = adw_toast_new (err_msg);
+        adw_toast_overlay_add_toast (self->copy_clip_feedback, toast);
+        g_free (err_msg);
+        g_clear_error (&error);
+        g_free (path);
+        return;
+    }
+
+    meme_window_load_pixbuf (self, pixbuf, is_gif, is_gif ? path : NULL);
     g_free (path);
+}
+
+void
+meme_window_open_texture (MemeWindow *self, GdkTexture *texture)
+{
+    GdkPixbuf *pixbuf = gdk_pixbuf_get_from_texture (texture);
+    if (!pixbuf) {
+        AdwToast *toast = adw_toast_new ("Couldn't read image");
+        adw_toast_overlay_add_toast (self->copy_clip_feedback, toast);
+        return;
+    }
+    meme_window_load_pixbuf (self, pixbuf, FALSE, NULL);
+}
+
+static void
+on_paste_texture_ready (GObject *source, GAsyncResult *res, gpointer user_data)
+{
+    MemeWindow *self = MEME_WINDOW (user_data);
+    GError *error = NULL;
+    GdkTexture *texture = gdk_clipboard_read_texture_finish (GDK_CLIPBOARD (source), res, &error);
+
+    if (!texture) {
+        adw_toast_overlay_add_toast (self->copy_clip_feedback,
+                                      adw_toast_new ("Clipboard doesn't contain an image"));
+        g_clear_error (&error);
+        return;
+    }
+
+    meme_window_open_texture (self, texture);
+    g_object_unref (texture);
+}
+
+void
+meme_window_paste_from_clipboard (MemeWindow *self)
+{
+    GdkClipboard *clipboard = gtk_widget_get_clipboard (GTK_WIDGET (self));
+    gdk_clipboard_read_texture_async (clipboard, NULL, on_paste_texture_ready, self);
 }
 
 static GdkPixbuf *

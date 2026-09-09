@@ -1,4 +1,4 @@
-/* myapp-application.c
+/* meme-application.c
  *
  * Copyright 2025 Giovanni
  *
@@ -363,6 +363,12 @@ gboolean on_window_key_pressed (GtkEventControllerKey *controller,
     if (is_exact_mods (state, GDK_CONTROL_MASK | GDK_SHIFT_MASK) &&
         (keyval == GDK_KEY_c || keyval == GDK_KEY_C)) {
         on_copy_clipboard_clicked (self);
+        return TRUE;
+    }
+
+    if (!editing_text && is_exact_mods (state, GDK_CONTROL_MASK) &&
+        (keyval == GDK_KEY_v || keyval == GDK_KEY_V)) {
+        meme_window_paste_from_clipboard (self);
         return TRUE;
     }
 

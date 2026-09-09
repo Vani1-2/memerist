@@ -1,5 +1,5 @@
 Name:           memerist
-Version:        2.1.0
+Version:        2.2.0
 Release:        1%{?dist}
 Summary:        A simple meme editor for Linux
 License:        GPL-3.0-or-later
@@ -36,7 +36,11 @@ Simple meme editor for Linux
 
 
 %changelog
-* Tue Sep 01 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 2.1.0-1
-- New freehand drawing tool
-- GIF's can now be imported to templates
-- Minor UI adjustments
+* Tue Sep 09 2026 Giovanni Rafanan <giovannirafanan609@gmail.com> - 2.1.0-1
+- Markup can no longer be selected as layers
+- New Redo and Undo buttons
+- Update to latest ImageMagick
+- Improve screen size adaptability
+- Fixed signal block leak
+- Fixed stale text/color preview
+- Fixed silent file loading errors
